@@ -1,0 +1,81 @@
+"""Engine invariants: no lookahead, next-bar-open fills, risk veto."""
+
+from __future__ import annotations
+
+from core.backtest.costs import CostModel
+from core.backtest.engine import BacktestEngine
+from core.data.feed import DataFeed
+from core.data.synthetic import make_intraday_bars
+from core.risk.sizing import RiskLimits, RiskManager
+from core.strategy import Action, Context, Order
+
+
+class _Probe:
+    """Records what each Context exposed; never trades."""
+
+    def __init__(self):
+        self.seen: list[tuple] = []
+
+    def on_bar(self, ctx: Context) -> list[Order]:
+        self.seen.append((ctx.now, ctx.history.index[-1], len(ctx.history)))
+        return []
+
+
+def _feed(days=5):
+    bars = make_intraday_bars(days=days, momentum=0.0)
+    return DataFeed("SPY", bars)
+
+
+def test_context_never_sees_the_future():
+    feed = _feed()
+    probe = _Probe()
+    BacktestEngine(probe, feed, RiskManager(), CostModel()).run()
+
+    # Current bar is always the last visible row, and history grows by one.
+    for i, (now, last, length) in enumerate(probe.seen):
+        assert now == last
+        assert length == i + 1
+    assert len(probe.seen) == len(feed.bars)
+
+
+class _EnterOnce:
+    """Enters long on the very first bar, then does nothing."""
+
+    def __init__(self):
+        self.done = False
+
+    def on_bar(self, ctx):
+        if not self.done:
+            self.done = True
+            return [Order(action=Action.ENTER_LONG, stop_distance=1.0, tag="t")]
+        return []
+
+
+def test_market_order_fills_at_next_bar_open():
+    feed = _feed()
+    costs = CostModel(half_spread_bps=1.0, slippage_bps=1.0)
+    engine = BacktestEngine(_EnterOnce(), feed, RiskManager(), costs)
+    engine.run()
+
+    entry = engine.broker.fills[0]
+    idx = feed.bars.index
+    assert entry.time == idx[1]  # decided on bar 0, filled on bar 1
+    expected = float(feed.bars.iloc[1]["open"]) * (1 + 2 / 10_000)
+    assert abs(entry.price - expected) < 1e-6
+
+
+def test_risk_vetoes_when_stop_too_wide_for_account():
+    feed = _feed()
+    # Tiny account: risking 0.5% on a huge stop distance -> 0 shares -> veto.
+    risk = RiskManager(RiskLimits(risk_per_trade=0.005))
+    engine = BacktestEngine(_EnterOnce(), feed, risk, CostModel(), starting_cash=100.0)
+    engine.run()
+    assert engine.broker.trades == []
+
+
+def test_context_now_is_eastern_close():
+    feed = _feed(days=1)
+    probe = _Probe()
+    BacktestEngine(probe, feed, RiskManager(), CostModel()).run()
+    first_close = feed.bars.index[0].tz_convert("America/New_York")
+    assert first_close.strftime("%H:%M") == "09:35"

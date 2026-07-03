@@ -28,6 +28,7 @@ monorepo with a shared `core/` and per-strategy packages.
 
 ## Deferred decisions (future ADRs)
 
-- 0002: backtest engine — build thin event loop vs. vectorbt/backtrader/nautilus
-- 0003: market data provider — Alpaca vs. Polygon vs. Databento
-- 0004: paper/live broker
+- 0002: backtest engine — **resolved**: thin event loop (`docs/decisions/0002-*`)
+- 0003: market data provider — **resolved**: Alpaca live + historical vendor for
+  backtest (`docs/decisions/0003-*`)
+- 0004: paper/live broker — **resolved**: Alpaca, paper first (`docs/decisions/0004-*`)

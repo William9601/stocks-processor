@@ -1,0 +1,41 @@
+# Intraday momentum (MIM) — run configuration.
+# Backtests and paper trading run the SAME code with this SAME file.
+
+strategy:
+  path: strategies/intraday-momentum
+  params:
+    ref_start: "09:30"      # session open anchor
+    ref_end: "10:00"        # end of the reference (morning) window
+    entry_time: "15:00"     # decision bar; fills next bar open
+    exit_time: "15:55"      # force flat; fills next bar open (15:55 print)
+    k: 0.5                  # threshold gate: trade iff |r_ref| > k * sigma_open
+    stop_mult: 2.0          # hard stop at stop_mult * ATR_open
+
+instrument:
+  symbol: SPY               # v1 primary (Alpaca-tradable); ES deferred (no futures on Alpaca)
+  bar_minutes: 5
+
+risk:
+  risk_per_trade: 0.005     # R = 0.5% of equity per trade
+  daily_loss_limit_r: 2.0   # halt new entries after losing 2*R in a day
+  max_drawdown: 0.15        # 15% peak-to-trough kill switch
+  point_value: 1.0          # $ per point per share (shares, not contracts)
+
+costs:                      # SPY: commission-free; spread+slippage in bps
+  commission_per_unit: 0.0
+  half_spread_bps: 1.0
+  slippage_bps: 1.0
+  stop_slippage_bps: 3.0
+
+backtest:
+  starting_cash: 100000.0
+  # Data windows per SPEC (locked). Point `data.source` at your provider's export.
+  in_sample:      { start: "2018-01-01", end: "2021-12-31" }
+  out_of_sample:  { start: "2022-01-01", end: "2024-12-31" }
+  walk_forward:   { start: "2025-01-01", end: null }
+
+data:
+  # Backtest bars come from a historical vendor (Alpaca SIP export, Polygon,
+  # Databento, ...). Leave null to run on synthetic demo data.
+  source: null
+  provider: null            # recorded in experiment provenance

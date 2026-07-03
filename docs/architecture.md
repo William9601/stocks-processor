@@ -38,12 +38,13 @@ class Strategy(Protocol):
 - Strategy parameters come from the strategy's `config.yaml`, so backtests and
   paper trading run the exact same code with the exact same config file.
 
-## Backtest engine choice (deferred)
+## Backtest engine choice (decided — ADR 0002)
 
-Decision deliberately deferred until first implementation (ADR to follow). Options:
-build a thin event-driven loop ourselves (~few hundred lines, full control, no dark
-corners) vs. adopt `vectorbt`/`backtrader`/`nautilus_trader`. Whatever the choice, it
-stays behind `core/backtest` so strategies never depend on it directly.
+Resolved at first implementation: a **thin event-driven loop** in `core/backtest/engine.py`
+(not `vectorbt`/`backtrader`/`nautilus_trader`), because the `on_bar` contract is
+event-driven and an explicit loop keeps the no-lookahead guarantee auditable. It stays
+behind `core/backtest` so strategies never depend on it directly. See
+`docs/decisions/0002-backtest-engine.md`.
 
 ## Data
 
