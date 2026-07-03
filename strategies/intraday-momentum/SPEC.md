@@ -1,14 +1,19 @@
 # Strategy: intraday-momentum
 
-- **Status**: implemented
+- **Status**: retired
 - **Created**: 2026-07-03
 - **One-liner**: Trades an index instrument in the direction of its early-session return, entering late in the day and flat by the close (market intraday momentum).
 - **Implementation**: `strategies/intraday-momentum/strategy.py` (+ `config.yaml`,
   `tests/`), running on the shared core. Backtestable via `scripts/run_backtest.py`;
-  paper-tradable on Alpaca via `scripts/run_paper.py` (`core/execution/live_runner.py` +
-  `paper.py`). Unit-tested on synthetic data (backtest + live loop). **Not yet validated
-  on real data**, and the paper path awaits a credentialed smoke test — success criteria
-  below remain locked and unmet until a real-data OOS run.
+  paper path built (`core/execution/live_runner.py` + `paper.py`, unit-tested; live
+  smoke test not run — and now moot).
+- **Result — REJECTED (2026-07-03)**: Failed every success criterion on real Alpaca SIP
+  data (SPY, 2018–2024). Net Sharpe −2.81 IS / −2.70 OOS; loses on both sides in both
+  windows. A raw diagnostic (corr(morning, afternoon) ≈ −0.035, momentum edge ~0 bps,
+  ~50% hit rate) shows the effect is **absent** in SPY at this formulation — negative
+  even gross of costs, so not an implementation or cost artifact. Rejected at
+  spec-validation rather than tuned, per the adversarial note below. Runs:
+  `experiments/intraday-momentum/2026-07-03-1720-{is,oos}/`.
 
 ## Hypothesis
 

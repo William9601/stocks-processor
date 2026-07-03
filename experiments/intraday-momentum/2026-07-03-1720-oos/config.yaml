@@ -1,0 +1,41 @@
+strategy:
+  path: strategies/intraday-momentum
+  params:
+    ref_start: 09:30
+    ref_end: '10:00'
+    entry_time: '15:00'
+    exit_time: '15:55'
+    k: 0.5
+    stop_mult: 2.0
+instrument:
+  symbol: SPY
+  bar_minutes: 5
+risk:
+  risk_per_trade: 0.005
+  daily_loss_limit_r: 2.0
+  max_drawdown: 0.15
+  point_value: 1.0
+costs:
+  commission_per_unit: 0.0
+  half_spread_bps: 1.0
+  slippage_bps: 1.0
+  stop_slippage_bps: 3.0
+backtest:
+  starting_cash: 100000.0
+  in_sample:
+    start: '2018-01-01'
+    end: '2021-12-31'
+  out_of_sample:
+    start: '2022-01-01'
+    end: '2024-12-31'
+  walk_forward:
+    start: '2025-01-01'
+    end: null
+data:
+  source: data/SPY_5m.parquet
+  provider: alpaca-sip
+provenance:
+  git_commit: d7431f9266dfa796287a2d007f10379802209c37
+  sample: oos
+  synthetic_data: false
+  run_at: '2026-07-03T17:20:10'
