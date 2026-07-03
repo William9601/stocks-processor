@@ -18,7 +18,7 @@ import time as _time
 
 import pandas as pd
 
-from core.data.feed import load_bars
+from core.data.alpaca import bars_to_canonical, filter_rth
 from core.strategy import Position, Side
 
 
@@ -51,14 +51,8 @@ class AlpacaPaperBroker:
             feed=self._feed,
         )
         bars = self._data.get_stock_bars(req)
-        df = bars.df
-        if df is None or df.empty:
-            return pd.DataFrame()
-        # Alpaca returns a (symbol, timestamp) MultiIndex; flatten to timestamp.
-        if isinstance(df.index, pd.MultiIndex):
-            df = df.xs(symbol, level=0)
-        df = df.reset_index().rename(columns={"timestamp": "ts"})
-        return load_bars(df)
+        canonical = bars_to_canonical(bars.df, symbol, bar_minutes=5, timestamp="open")
+        return filter_rth(canonical)
 
     # --- account / position ---
     def account(self) -> tuple[float, float]:

@@ -37,5 +37,5 @@ backtest:
 data:
   # Backtest bars come from a historical vendor (Alpaca SIP export, Polygon,
   # Databento, ...). Leave null to run on synthetic demo data.
-  source: null
-  provider: null            # recorded in experiment provenance
+  source: data/SPY_5m.parquet
+  provider: alpaca-sip
