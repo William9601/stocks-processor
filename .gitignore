@@ -1,0 +1,19 @@
+# market data cache — never commit (root-level only; core/data is code)
+/data/
+
+# secrets
+.env
+.env.*
+
+# python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# os / editors
+.DS_Store
+.idea/
+.vscode/
