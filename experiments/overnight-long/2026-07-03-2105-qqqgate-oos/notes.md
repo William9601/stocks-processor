@@ -1,4 +1,11 @@
-# overnight-long — MASTER VERDICT (QQQ gated OOS is the standout run)
+# overnight-long — MASTER VERDICT v1 (superseded)
+
+> **Superseded 2026-07-03 by verdict v2** after the execution-cost study this verdict
+> called for was run: measured costs (QQQ 2.9 bps vs the assumed 7) flip QQQ-gated to a
+> PASS on the same locked bars, confirmed on 2025–2026 walk-forward (Sharpe 1.14). See
+> `../2026-07-03-2323-qqqgate-wf-evcost/notes.md` and
+> `experiments/execution-cost-study/2026-07-03-2319-spy-qqq-auction/`.
+> The analysis below is kept unchanged for the record.
 
 - sample: oos | instrument: QQQ | gate: 200-SMA risk-on | synthetic: False
 - data: data/QQQ_5m_adj.parquet + data/QQQ_daily_adj.parquet (Alpaca SIP, **dividend+split adjusted**)

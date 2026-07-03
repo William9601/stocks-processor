@@ -1,13 +1,35 @@
 # Strategy: overnight-long
 
-- **Status**: implemented
+- **Status**: qualified paper-candidate (QQQ gated only — borderline OOS, walk-forward-carried; pending user sign-off + 4 blocking fixes)
 - **Created**: 2026-07-03
 - **One-liner**: Harvest the equity-index overnight risk premium with a single leg — buy a liquid index ETF at the regular-session close (MOC) and exit at the next open (MOO), gated by a risk-on 200-day-SMA regime — deliberately dropping the structurally-edgeless intraday-short leg that sank the retired overnight-drift strategy.
 - **Implementation**: `strategies/overnight-long/strategy.py` (+ 4 configs: SPY/QQQ ×
   gated/ungated, `tests/`), on the shared core (reuses the MOC/MOO machinery built for
   overnight-drift; no new core code). Data is dividend+split adjusted (`*_adj.parquet`,
   via the new `fetch_data.py --adjustment all`) — mandatory for a long-only overnight book.
-- **Result — REJECT on locked criteria, but GROSS-PROFITABLE & cost-gated (2026-07-03)**:
+- **Result v2 — BORDERLINE OOS, WALK-FORWARD-CARRIED; qualified paper candidate, QQQ
+  gated only (2026-07-03)**: The execution-cost study recommended below was run
+  (pre-registered method: `experiments/execution-cost-study/2026-07-03-2319-spy-qqq-auction/`)
+  and measured real MOC/MOO round-trip cost at **SPY 2.03 / QQQ 2.90 bps** vs the
+  ~7 bps assumption. Re-judged on identical params/windows/bars. Quant-reviewer
+  (TRUST-WITH-CAVEATS) then found the engine's Sharpe **excludes gate-flat days** from
+  the denominator: QQQ-gated OOS reads 0.715 under the engine convention but **0.584
+  zero-filled — below the 0.7 bar**; cost-vintage sensitivity brackets it further
+  (0.65 at pre-WF costs / 0.82 at OOS-period-matched). **The OOS result is honestly
+  BORDERLINE, not a pass.** What carries the candidacy is the untouched
+  **2025-01→2026-07 walk-forward: Sharpe 1.14 engine / 1.08 corrected, net +1.7%,
+  DD −1.0%, net-positive even at the old locked 7 bps** — robust across every check
+  thrown at it (it ~ties, does not beat, QQQ B&H's 1.12 there, with −1.0% vs −22.8%
+  DD; the B&H gate is OOS-only and passes: 0.584 vs 0.503). Other OOS bars pass:
+  expectancy +1.5%, DD 1.6%, worst night ≈1.1·R, decay −15%, 498 cycles. No lookahead;
+  no goalposts moved; SPY gated stays REJECTED (OOS 0.34). Full scorecard + caveats:
+  `experiments/overnight-long/2026-07-03-2323-qqqgate-wf-evcost/notes.md` (verdict v2).
+  **Blocking prerequisites before paper**: dead 2·R limit fix; calendar-aware sessions
+  (incl. phantom half-day 16:00 bars found in the data); Alpaca MOC-cutoff (~15:50)
+  vs 15:55 decision-bar fix + re-run; metrics.py zero-filled-Sharpe fix; explicit user
+  sign-off. **Auto-reject tripwire in paper:** measured fill cost > ~4–5 bps RT or
+  odd-lot auction ineligibility → back to REJECT.
+- **Result v1 — REJECT on locked criteria, but GROSS-PROFITABLE & cost-gated (2026-07-03)**:
   Unlike the two retired siblings, the overnight premium is **real and gross-positive in
   all 8 runs** (+1.3% to +7.0%), with small drawdown (2–5%). Net is ~breakeven (IS ≈ 0,
   OOS negative) — the entire gap is the conservative ~7 bps auction-cost assumption. Fails

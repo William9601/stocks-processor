@@ -1,0 +1,21 @@
+{
+  "net_return": -0.007083124019997777,
+  "gross_return": 0.014510400000000034,
+  "annualized_return": -0.00590242476235725,
+  "sharpe": -0.7550689915085999,
+  "sortino": -0.9375464812384054,
+  "max_drawdown": -0.01434150656867006,
+  "max_drawdown_days": 525,
+  "win_rate": 0.5264797507788161,
+  "profit_factor": 0.8813650275765805,
+  "avg_win": 31.137319396450383,
+  "avg_loss": -39.27973276315719,
+  "trade_count": 321,
+  "turnover": 30.84885167994,
+  "cost_drag": 0.02159352401999772,
+  "long_pnl": -708.3124019997779,
+  "short_pnl": 0.0,
+  "start_date": "2025-01-02",
+  "end_date": "2026-07-02",
+  "sample": "walkforward"
+}

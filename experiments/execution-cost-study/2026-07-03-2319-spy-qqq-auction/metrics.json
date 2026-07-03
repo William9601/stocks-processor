@@ -1,0 +1,113 @@
+{
+  "regulatory_fees_bps_round_trip": 0.3,
+  "SPY": {
+    "fill_reference_error": {
+      "sessions": 2135,
+      "dropped_open_site": 0,
+      "dropped_close_site": 1,
+      "date_range": [
+        "2018-01-02",
+        "2026-07-02"
+      ],
+      "open_site": {
+        "n": 2135,
+        "signed_mean_bps": -0.0176,
+        "abs_p50_bps": 0.0,
+        "abs_p75_bps": 0.2177,
+        "abs_p90_bps": 0.4226,
+        "abs_p95_bps": 0.717,
+        "abs_max_bps": 6.0068
+      },
+      "close_site": {
+        "n": 2134,
+        "signed_mean_bps": -0.2371,
+        "abs_p50_bps": 0.8008,
+        "abs_p75_bps": 1.5118,
+        "abs_p90_bps": 2.8482,
+        "abs_p95_bps": 4.1855,
+        "abs_max_bps": 279.4017
+      }
+    },
+    "auction_half_spread": {
+      "half_spread_bps_median_0930": 0.1804,
+      "half_spread_bps_median_1559": 0.1258,
+      "windows_ok": 24,
+      "windows_failed": [],
+      "sample_days": [
+        "2018-01-02",
+        "2018-10-09",
+        "2019-07-19",
+        "2020-04-27",
+        "2021-02-02",
+        "2021-11-08",
+        "2022-08-17",
+        "2023-05-25",
+        "2024-03-05",
+        "2024-12-10",
+        "2025-09-23",
+        "2026-07-02"
+      ]
+    },
+    "evidence_based_costs": {
+      "half_spread_bps": 0.0,
+      "close_slippage_bps": 1.5118,
+      "slippage_bps": 0.5177,
+      "round_trip_bps": 2.0295
+    }
+  },
+  "QQQ": {
+    "fill_reference_error": {
+      "sessions": 2135,
+      "dropped_open_site": 0,
+      "dropped_close_site": 4,
+      "date_range": [
+        "2018-01-02",
+        "2026-07-02"
+      ],
+      "open_site": {
+        "n": 2135,
+        "signed_mean_bps": -0.0215,
+        "abs_p50_bps": 0.0,
+        "abs_p75_bps": 0.2855,
+        "abs_p90_bps": 0.766,
+        "abs_p95_bps": 1.2473,
+        "abs_max_bps": 5.3459
+      },
+      "close_site": {
+        "n": 2131,
+        "signed_mean_bps": -0.0935,
+        "abs_p50_bps": 1.1164,
+        "abs_p75_bps": 2.3138,
+        "abs_p90_bps": 4.4439,
+        "abs_p95_bps": 6.3358,
+        "abs_max_bps": 83.9835
+      }
+    },
+    "auction_half_spread": {
+      "half_spread_bps_median_0930": 0.301,
+      "half_spread_bps_median_1559": 0.1723,
+      "windows_ok": 24,
+      "windows_failed": [],
+      "sample_days": [
+        "2018-01-02",
+        "2018-10-09",
+        "2019-07-19",
+        "2020-04-27",
+        "2021-02-02",
+        "2021-11-08",
+        "2022-08-17",
+        "2023-05-25",
+        "2024-03-05",
+        "2024-12-10",
+        "2025-09-23",
+        "2026-07-02"
+      ]
+    },
+    "evidence_based_costs": {
+      "half_spread_bps": 0.0,
+      "close_slippage_bps": 2.3138,
+      "slippage_bps": 0.5855,
+      "round_trip_bps": 2.8993
+    }
+  }
+}

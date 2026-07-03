@@ -1,0 +1,45 @@
+# Overnight-long — SPY gated, EVIDENCE-BASED costs (execution-cost study re-judgment).
+# Identical to config.yaml except the costs block, which is set by the pre-registered
+# rule in experiments/execution-cost-study/2026-07-03-2319-spy-qqq-auction/notes.md:
+# auction fills cross no book (half_spread 0), per-fill slippage = p75 of the measured
+# |bar-reference - official auction print| error, + 0.3 bps regulatory fees on the sell
+# (open) side. Measured SPY round-trip: 2.03 bps (vs 7 bps locked assumption).
+
+strategy:
+  path: strategies/overnight-long
+  params:
+    close_decision_time: "15:55"
+    session_close_time: "16:00"
+    use_regime_gate: true
+    sma_window: 200
+    overnight_vol_window: 20
+    gap_vol_mult: 3.0
+    gap_floor: 0.05
+    daily_source: data/SPY_daily_adj.parquet
+
+instrument:
+  symbol: SPY
+  bar_minutes: 5
+
+risk:
+  risk_per_trade: 0.005
+  daily_loss_limit_r: 2.0
+  max_drawdown: 0.15
+  point_value: 1.0
+
+costs:                      # EVIDENCE-BASED (measured 2026-07-03, 2018-2026 SIP data)
+  commission_per_unit: 0.0
+  half_spread_bps: 0.0      # auction fills do not cross the book
+  slippage_bps: 0.5177      # MOO exit: open-site p75 0.2177 + 0.3 fees (sell side)
+  close_slippage_bps: 1.5118  # MOC entry: close-site p75
+  stop_slippage_bps: 3.0    # unused (no stops)
+
+backtest:
+  starting_cash: 100000.0
+  in_sample:      { start: "2018-01-01", end: "2021-12-31" }
+  out_of_sample:  { start: "2022-01-01", end: "2024-12-31" }
+  walk_forward:   { start: "2025-01-01", end: null }
+
+data:
+  source: data/SPY_5m_adj.parquet
+  provider: alpaca-sip
