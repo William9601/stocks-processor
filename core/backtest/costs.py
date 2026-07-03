@@ -21,14 +21,28 @@ class CostModel:
     half_spread_bps: float = 1.0  # half the bid/ask spread, in basis points
     slippage_bps: float = 1.0  # extra adverse move on market fills, bps
     stop_slippage_bps: float = 3.0  # stops fill worse (gap-through risk)
+    close_slippage_bps: float | None = None  # market-on-close fills; None -> slippage_bps
 
-    def _frac(self, is_stop: bool) -> float:
-        bps = self.half_spread_bps + (self.stop_slippage_bps if is_stop else self.slippage_bps)
-        return bps / 10_000.0
+    def _slippage_bps(self, is_stop: bool, is_close: bool) -> float:
+        if is_stop:
+            return self.stop_slippage_bps
+        if is_close and self.close_slippage_bps is not None:
+            return self.close_slippage_bps
+        return self.slippage_bps
 
-    def adverse_price(self, price: float, is_buy: bool, is_stop: bool = False) -> float:
-        """Price after spread+slippage are pushed against the trade direction."""
-        f = self._frac(is_stop)
+    def _frac(self, is_stop: bool, is_close: bool) -> float:
+        return (self.half_spread_bps + self._slippage_bps(is_stop, is_close)) / 10_000.0
+
+    def adverse_price(
+        self, price: float, is_buy: bool, is_stop: bool = False, is_close: bool = False
+    ) -> float:
+        """Price after spread+slippage are pushed against the trade direction.
+
+        ``is_close`` marks a market-on-close (close-auction) fill, which uses
+        ``close_slippage_bps`` when configured; otherwise the ordinary
+        ``slippage_bps`` applies (so existing next-open strategies are unchanged).
+        """
+        f = self._frac(is_stop, is_close)
         return price * (1 + f) if is_buy else price * (1 - f)
 
     def commission(self, qty: float) -> float:

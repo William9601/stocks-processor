@@ -6,8 +6,9 @@ from core.backtest.costs import CostModel
 from core.backtest.engine import BacktestEngine
 from core.data.feed import DataFeed
 from core.data.synthetic import make_intraday_bars
+from core.execution.broker import BacktestBroker
 from core.risk.sizing import RiskLimits, RiskManager
-from core.strategy import Action, Context, Order
+from core.strategy import Action, Context, FillTiming, Order, Side
 
 
 class _Probe:
@@ -62,6 +63,70 @@ def test_market_order_fills_at_next_bar_open():
     assert entry.time == idx[1]  # decided on bar 0, filled on bar 1
     expected = float(feed.bars.iloc[1]["open"]) * (1 + 2 / 10_000)
     assert abs(entry.price - expected) < 1e-6
+
+
+class _EnterOnceMOC:
+    """Enters long once with a market-on-close fill and no resting stop."""
+
+    def __init__(self):
+        self.done = False
+
+    def on_bar(self, ctx):
+        if not self.done:
+            self.done = True
+            return [
+                Order(
+                    action=Action.ENTER_LONG,
+                    stop_distance=1.0,
+                    resting_stop=False,
+                    fill=FillTiming.NEXT_CLOSE,
+                    tag="moc",
+                )
+            ]
+        return []
+
+
+def test_market_on_close_fills_at_next_bar_close():
+    feed = _feed()
+    costs = CostModel(half_spread_bps=1.0, slippage_bps=1.0, close_slippage_bps=2.0)
+    engine = BacktestEngine(_EnterOnceMOC(), feed, RiskManager(), costs)
+    engine.run()
+
+    entry = engine.broker.fills[0]
+    idx = feed.bars.index
+    # Decided on bar 0, filled on bar 1 — at its CLOSE, not its open.
+    assert entry.time == idx[1]
+    expected = float(feed.bars.iloc[1]["close"]) * (1 + (1.0 + 2.0) / 10_000)  # close-auction bps
+    assert abs(entry.price - expected) < 1e-6
+
+
+def test_resting_stop_false_places_no_stop():
+    """An un-stoppable entry sizes off stop_distance but rests no protective stop."""
+    feed = _feed()
+    broker = BacktestBroker("SPY", 100_000.0, CostModel())
+    broker.submit(
+        Order(action=Action.ENTER_LONG, qty=10.0, stop_distance=1.0, resting_stop=False)
+    )
+    bar, ts = feed.bars.iloc[0], feed.bars.index[0]
+    broker.process_open(bar, ts)  # fills at this bar's open (NEXT_OPEN default)
+    assert broker.position().qty == 10.0
+    assert broker.position().stop_price is None  # no stop despite stop_distance
+
+
+def test_close_then_enter_flip_on_same_print():
+    """A [CLOSE, ENTER_SHORT] pair queued together flips the book on one open."""
+    feed = _feed()
+    broker = BacktestBroker("SPY", 100_000.0, CostModel())
+    # Start long.
+    broker.submit(Order(action=Action.ENTER_LONG, qty=5.0, stop_distance=1.0))
+    broker.process_open(feed.bars.iloc[0], feed.bars.index[0])
+    assert broker.position().side is Side.LONG
+    # Flip: close the long and open a short at the very next open, in one batch.
+    broker.submit(Order(action=Action.CLOSE))
+    broker.submit(Order(action=Action.ENTER_SHORT, qty=7.0, stop_distance=1.0))
+    broker.process_open(feed.bars.iloc[1], feed.bars.index[1])
+    assert broker.position().side is Side.SHORT
+    assert broker.position().qty == 7.0
 
 
 def test_risk_vetoes_when_stop_too_wide_for_account():

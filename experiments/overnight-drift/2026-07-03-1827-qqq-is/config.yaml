@@ -1,0 +1,47 @@
+strategy:
+  path: strategies/overnight-drift
+  params:
+    close_decision_time: '15:55'
+    session_close_time: '16:00'
+    sma_window: 200
+    atr_window: 20
+    overnight_vol_window: 20
+    gap_vol_mult: 3.0
+    gap_floor: 0.05
+    atr_stop_mult: 1.0
+    stop_floor: 0.0075
+    stop_cap: 0.03
+    daily_source: data/QQQ_daily.parquet
+instrument:
+  symbol: QQQ
+  bar_minutes: 5
+risk:
+  risk_per_trade: 0.005
+  daily_loss_limit_r: 2.0
+  max_drawdown: 0.15
+  point_value: 1.0
+costs:
+  commission_per_unit: 0.0
+  half_spread_bps: 1.0
+  slippage_bps: 3.0
+  close_slippage_bps: 2.0
+  stop_slippage_bps: 3.0
+backtest:
+  starting_cash: 100000.0
+  in_sample:
+    start: '2018-01-01'
+    end: '2021-12-31'
+  out_of_sample:
+    start: '2022-01-01'
+    end: '2024-12-31'
+  walk_forward:
+    start: '2025-01-01'
+    end: null
+data:
+  source: data/QQQ_5m.parquet
+  provider: alpaca-sip
+provenance:
+  git_commit: 005f21d94d5ca40ccd362f58f1e2d8eb151c1bee
+  sample: is
+  synthetic_data: false
+  run_at: '2026-07-03T18:27:01'

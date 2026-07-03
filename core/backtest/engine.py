@@ -1,15 +1,18 @@
 """Event-driven backtest loop.
 
 For each bar, in order:
-  1. fill orders queued on the previous bar, at this bar's open;
+  1. fill previous bar's NEXT_OPEN orders at this bar's open;
   2. check the resting protective stop against this bar's range;
-  3. hand the strategy a point-in-time Context (bars up to *and including* this
+  3. fill previous bar's NEXT_CLOSE (market-on-close) orders at this bar's close;
+  4. hand the strategy a point-in-time Context (bars up to *and including* this
      bar) and collect its order intents;
-  4. size/veto each intent via risk, and queue survivors for the next open.
+  5. size/veto each intent via risk, and queue survivors for the next bar.
 
-Step 3 seeing the current bar while step 1/2 already happened is correct: the
-strategy decides on the close it can see, and its orders fill on the *next*
-bar's open — never this one.
+Steps 1-3 settle only orders queued on *earlier* bars, so a strategy can never
+fill on the bar it decided on: a decision made on this bar's close (step 4)
+fills at the earliest on the next bar (its open or its close). Within a bar,
+open precedes close, and a resting stop (step 2) is checked before the closing
+auction (step 3).
 """
 
 from __future__ import annotations
@@ -57,11 +60,13 @@ class BacktestEngine:
             bar = bars.iloc[i]
             ts = idx[i]
 
-            # 1 & 2: settle the previous bar's decisions against this bar.
+            # 1-3: settle the previous bar's decisions against this bar
+            # (open fills, then resting stops, then market-on-close fills).
             self.broker.process_open(bar, ts)
             self.broker.check_stops(bar, ts)
+            self.broker.process_close(bar, ts)
 
-            # 3: point-in-time context (no future rows).
+            # 4: point-in-time context (no future rows).
             close_px = float(bar["close"])
             equity = self.broker.equity(close_px)
             ctx = Context(
@@ -73,7 +78,7 @@ class BacktestEngine:
             )
             orders = self.strategy.on_bar(ctx)
 
-            # 4: size/veto and queue for the next open.
+            # 5: size/veto and queue for the next bar.
             for order in orders:
                 sized = self.risk.size(order, ctx, ref_price=close_px)
                 if sized is not None:

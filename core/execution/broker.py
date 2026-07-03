@@ -1,12 +1,18 @@
 """BacktestBroker: fills orders against bars and keeps the book.
 
 Fill discipline (matches the SPEC, avoids lookahead):
-- Market orders queued on bar *i* fill at the **open of bar i+1**. A strategy
-  can never fill on the bar it made its decision on.
+- Orders queued on bar *i* fill on bar *i+1* — never on the bar the strategy
+  decided on. The fill *site* on bar i+1 depends on the order's
+  :class:`~core.strategy.FillTiming`: ``NEXT_OPEN`` fills at that bar's open (a
+  market-on-open fill, the original behavior); ``NEXT_CLOSE`` fills at that
+  bar's close (a market-on-close fill — the decision was committed on the prior
+  bar's close, strictly before the fill print).
 - A protective stop is placed ``stop_distance`` from the actual entry fill and
-  rests until touched. If a later bar's range crosses it, it fills at the stop
+  rests until touched — but only when the entry order asked for one
+  (``resting_stop``). If a later bar's range crosses it, it fills at the stop
   price with adverse stop-slippage (optimistic-but-flagged intrabar assumption,
-  per SPEC).
+  per SPEC). Positions that cannot be stopped (e.g. an overnight hold while the
+  market is closed) size off ``stop_distance`` but place no resting stop.
 - Time-exit CLOSE orders are processed at the next open *before* stops, so a
   scheduled flat always wins over a same-bar stop.
 """
@@ -18,7 +24,7 @@ from typing import TYPE_CHECKING
 
 import pandas as pd
 
-from core.strategy import Action, Order, Position, Side
+from core.strategy import Action, FillTiming, Order, Position, Side
 
 if TYPE_CHECKING:
     from core.backtest.costs import CostModel
@@ -77,23 +83,43 @@ class BacktestBroker:
         return self.cash + self._pos_qty * mark_price
 
     def submit(self, order: Order) -> None:
-        """Queue a (already risk-sized) order to fill at the next bar open."""
+        """Queue a (already risk-sized) order to fill on the next bar."""
         self._pending.append(order)
 
     # --- per-bar processing, called by the engine in this order ---
     def process_open(self, bar: pd.Series, ts: pd.Timestamp) -> None:
-        """Fill queued market orders at this bar's open."""
+        """Fill queued NEXT_OPEN orders at this bar's open."""
+        self._fill_pending(FillTiming.NEXT_OPEN, float(bar["open"]), ts, is_close=False)
+
+    def process_close(self, bar: pd.Series, ts: pd.Timestamp) -> None:
+        """Fill queued NEXT_CLOSE (market-on-close) orders at this bar's close."""
+        self._fill_pending(FillTiming.NEXT_CLOSE, float(bar["close"]), ts, is_close=True)
+
+    def _fill_pending(
+        self, timing: FillTiming, ref_px: float, ts: pd.Timestamp, is_close: bool
+    ) -> None:
+        """Fill the pending orders matching ``timing`` at ``ref_px``, in order.
+
+        Orders of other timings are left queued. In-order iteration lets a
+        ``[CLOSE, ENTER_*]`` pair flatten then re-enter on the same print (the
+        overnight->intraday leg handoff).
+        """
         if not self._pending:
             return
-        open_px = float(bar["open"])
+        remaining: list[Order] = []
         for order in self._pending:
+            if order.fill is not timing:
+                remaining.append(order)
+                continue
             if order.action is Action.CLOSE:
-                self._close(open_px, ts, is_stop=False, reason=order.tag or "time_exit")
+                self._close(
+                    ref_px, ts, is_stop=False, is_close=is_close, reason=order.tag or "time_exit"
+                )
             elif order.action in (Action.ENTER_LONG, Action.ENTER_SHORT):
                 if self._pos_qty != 0.0:
                     continue  # one position at a time
-                self._open(order, open_px, ts)
-        self._pending.clear()
+                self._open(order, ref_px, ts, is_close=is_close)
+        self._pending = remaining
 
     def check_stops(self, bar: pd.Series, ts: pd.Timestamp) -> None:
         """Fill a resting protective stop if this bar's range crosses it."""
@@ -107,28 +133,38 @@ class BacktestBroker:
             self._close(self._stop_price, ts, is_stop=True, reason="stop")
 
     # --- internal fill mechanics (signed cash accounting) ---
-    def _open(self, order: Order, ref_px: float, ts: pd.Timestamp) -> None:
+    def _open(self, order: Order, ref_px: float, ts: pd.Timestamp, is_close: bool = False) -> None:
         is_buy = order.action is Action.ENTER_LONG
         qty = order.qty * (1 if is_buy else -1)
-        price = self.costs.adverse_price(ref_px, is_buy=is_buy)
+        price = self.costs.adverse_price(ref_px, is_buy=is_buy, is_close=is_close)
         comm = self.costs.commission(qty)
         slip = abs(price - ref_px) * abs(qty)
         self.cash -= qty * price + comm
         self._pos_qty = qty
         self._avg_price = price
         self._stop_distance = order.stop_distance
-        if order.stop_distance is not None:
+        # Only rest a protective stop when the entry asked for one. A position
+        # sized off stop_distance but with resting_stop=False (an un-stoppable
+        # overnight hold) places no stop.
+        if order.stop_distance is not None and order.resting_stop:
             sign = -1 if is_buy else 1
             self._stop_price = price + sign * order.stop_distance
         fill = Fill(ts, price, qty, comm, slip, reason=order.tag or "entry")
         self._open_fill = fill
         self.fills.append(fill)
 
-    def _close(self, ref_px: float, ts: pd.Timestamp, is_stop: bool, reason: str) -> None:
+    def _close(
+        self,
+        ref_px: float,
+        ts: pd.Timestamp,
+        is_stop: bool,
+        reason: str,
+        is_close: bool = False,
+    ) -> None:
         if self._pos_qty == 0.0:
             return
         is_buy = self._pos_qty < 0  # buy to cover a short
-        price = self.costs.adverse_price(ref_px, is_buy=is_buy, is_stop=is_stop)
+        price = self.costs.adverse_price(ref_px, is_buy=is_buy, is_stop=is_stop, is_close=is_close)
         close_qty = -self._pos_qty
         comm = self.costs.commission(close_qty)
         exit_slip = abs(price - ref_px) * abs(close_qty)

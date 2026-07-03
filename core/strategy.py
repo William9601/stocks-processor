@@ -30,6 +30,20 @@ class Action(Enum):
     CLOSE = "close"
 
 
+class FillTiming(Enum):
+    """When a queued order fills, relative to the bar after it was submitted.
+
+    Orders never fill on the bar they were decided on. ``NEXT_OPEN`` fills at
+    the open of the following bar (a market-on-open / next-open fill — the
+    original and only behavior); ``NEXT_CLOSE`` fills at the *close* of the
+    following bar (a market-on-close fill — the decision is committed on the
+    prior bar's close, strictly before the fill print). See broker/engine.
+    """
+
+    NEXT_OPEN = "next_open"
+    NEXT_CLOSE = "next_close"
+
+
 @dataclass
 class Order:
     """An order *intent* emitted by a strategy.
@@ -37,14 +51,19 @@ class Order:
     ``qty`` is left ``None`` by the strategy and filled in by ``core.risk``.
     For :attr:`Action.CLOSE` the executor closes the full open position, so
     ``qty`` is ignored. ``stop_distance`` (price points) is required on entries:
-    ``core.risk`` uses it to size the position, and the broker places a
-    protective stop that far from the actual fill price.
+    ``core.risk`` uses it to size the position. When ``resting_stop`` is true the
+    broker also places a protective stop that far from the actual fill price;
+    when false, ``stop_distance`` is a *sizing basis only* and no stop is placed
+    (used by positions that cannot be stopped, e.g. an overnight hold while the
+    market is closed). ``fill`` selects the fill timing (see :class:`FillTiming`).
     """
 
     action: Action
     stop_distance: float | None = None
     qty: float | None = None
     tag: str = ""
+    fill: FillTiming = FillTiming.NEXT_OPEN
+    resting_stop: bool = True
 
 
 class Side(Enum):

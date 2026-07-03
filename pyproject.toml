@@ -35,3 +35,6 @@ select = ["E", "F", "I", "UP", "B"]
 [tool.pytest.ini_options]
 testpaths = ["core", "strategies"]
 python_files = ["test_*.py"]
+# Strategy dirs are hyphenated (not packages); importlib mode lets same-named
+# test modules (e.g. each strategy's test_strategy.py) coexist without clashing.
+addopts = "--import-mode=importlib"

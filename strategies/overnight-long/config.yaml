@@ -1,0 +1,43 @@
+# Overnight-long — SPY gated (primary run, instrument A).
+# Single overnight-long leg, 200-SMA risk-on gate. Same locked costs as the
+# retired overnight-drift parent (no goalpost-moving). SPY and QQQ are judged
+# separately against the same locked criteria; ungated variants are diagnostics.
+
+strategy:
+  path: strategies/overnight-long
+  params:
+    close_decision_time: "15:55"   # MOC entry decided here; fills at 16:00 close
+    session_close_time: "16:00"    # last bar; MOO exit decided here, fills next open
+    use_regime_gate: true          # hold only when close > 200-day SMA (LOCKED)
+    sma_window: 200
+    overnight_vol_window: 20        # 20-day stdev of close->open returns -> gap budget
+    gap_vol_mult: 3.0               # G = max(3 * sigma_overnight, gap_floor)
+    gap_floor: 0.05                 #   overnight sizing basis (no stop; ~5% worst gap)
+    daily_source: data/SPY_daily_adj.parquet
+
+instrument:
+  symbol: SPY
+  bar_minutes: 5
+
+risk:
+  risk_per_trade: 0.005
+  daily_loss_limit_r: 2.0
+  max_drawdown: 0.15
+  point_value: 1.0
+
+costs:                      # same conservative auction assumption as the parent
+  commission_per_unit: 0.0
+  half_spread_bps: 1.0
+  slippage_bps: 3.0         # open-auction (MOO exit)
+  close_slippage_bps: 2.0   # close-auction (MOC entry)
+  stop_slippage_bps: 3.0    # unused (no stops), kept for schema completeness
+
+backtest:
+  starting_cash: 100000.0
+  in_sample:      { start: "2018-01-01", end: "2021-12-31" }
+  out_of_sample:  { start: "2022-01-01", end: "2024-12-31" }
+  walk_forward:   { start: "2025-01-01", end: null }
+
+data:
+  source: data/SPY_5m_adj.parquet
+  provider: alpaca-sip
