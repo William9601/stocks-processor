@@ -61,3 +61,37 @@ Isolation runs (same code, `decision_offset_minutes` 5 ≈ old 15:55 vs 20):
 **Disposition: qualified paper candidate, QQQ gated only — proceed to paper per
 the pre-registered gate in SPEC.md (4 weeks / ~20 fills; auto-reject if measured
 round-trip cost > 4-5 bps or recurring odd-lot auction rejections).**
+
+## Quant-review outcome (2026-07-04, post-suite)
+
+Independent quant-reviewer pass over commits `6d4c718` + `4f5f2ef`:
+
+- **(i) t1540 re-run results: TRUST-WITH-CAVEATS.** No lookahead found; zero-fill
+  Sharpe correct and conservative; the calendar/MOC fixes remove genuinely
+  fictitious fills. "Measurement clean."
+- **(ii) paper execution path: DO-NOT-TRUST as first committed** — three blockers,
+  all fixed the same day before any paper order: risk-breaker state now persists
+  across the one-process-per-cycle lifetime (`paper-risk-state.QQQ.json`); crash
+  recovery on the exit morning exits TODAY's open (was: skipped to the next
+  session, holding an extra night); rejected/unfilled MOC/OPG orders are handled
+  and logged, with a fallback market exit (was: uncaught TimeoutError). Plus:
+  SIP feed is now required for the overnight paper mode (IEX would measure
+  against non-official prints).
+- **Reviewer caveat kept on the record (candidacy, not measurement):** the
+  pre-registered OOS bar (≥0.7) failed under both conventions; the carry is a
+  1.5-year walk-forward whose Sharpe standard error (~1.0 annualized) makes
+  1.0749 statistically indistinguishable from the failed OOS 0.55 — the reviewer
+  characterizes promoting on the WF window as goalpost-moving even if honestly
+  documented. The user approved paper on exactly this "borderline OOS,
+  WF-carried" basis; the paper gate in SPEC.md was rewritten after review to be
+  honest that **Alpaca paper (simulator) fills can falsify but never confirm the
+  2.90 bps cost hypothesis**, which therefore remains UNVALIDATED after paper
+  and needs a quote-based study (or explicit user decision) before any further
+  promotion.
+- Isolation evidence committed: `2026-07-04-0940-t1540-isolation-study/`
+  (15:40-shift neutrality reproducible; v2-anchor reproduction limits stated).
+- Minor open items (accepted, on the record): the Sharpe denominator uses
+  sessions present in the data, not the full XNYS calendar (parquet ends
+  2024-12-30, so OOS counts 752 not 753 — 4th-decimal effect); the 200-SMA gate
+  runs on back-adjusted closes (borderline gate days can differ live vs
+  backtest); `_annualized_return` compounds the arithmetic mean (cosmetic).

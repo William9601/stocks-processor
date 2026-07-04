@@ -424,27 +424,43 @@ reject is an expected and honest outcome, not a failure to be tuned away.**
 Per workflow gate 6, the sample size and tolerances are fixed up front so the paper
 verdict cannot be relitigated after the fills arrive.
 
-- **What paper measures (week 1 through week 4): execution cost, NOT profit.** The
-  candidacy rests on the measured 2.90 bps round-trip auction-cost hypothesis
-  (`experiments/execution-cost-study/2026-07-03-2319-spy-qqq-auction/`). Paper exists to
-  verify that hypothesis with real MOC/MOO fills on the paper account. **Profit judgment
-  needs months of cycles and is explicitly NOT the goal of the first weeks.**
+- **What paper CAN and CANNOT measure (quant-review finding, stated up front).** Alpaca
+  *paper* fills come from a **simulator**, not from participation in the real Nasdaq
+  opening/closing crosses. The fill log therefore validates **operational mechanics**
+  (MOC/OPG order acceptance incl. ~20-share odd lots, the 15:45/09:28 cutoffs, the
+  overnight scheduler, crash recovery, logging) and the **signal path** (gate decisions
+  matching the backtest), and it accumulates real official auction prints (SIP daily
+  bars) for continued gross-edge monitoring. It **cannot CONFIRM the 2.90 bps
+  round-trip cost hypothesis** (`experiments/execution-cost-study/2026-07-03-2319-*`),
+  because simulated fills are not real auction executions. The tripwires below are
+  therefore **asymmetric**: bad paper outcomes are real evidence and reject; good paper
+  outcomes do NOT validate the cost hypothesis, which stays **UNVALIDATED** at the end
+  of the paper phase and must be revisited with the user (e.g. a quote-based
+  measurement study — official close print vs pre-cutoff NBBO mid — before any further
+  promotion; live money is out of scope and never by default). **Profit judgment needs
+  months of cycles and is explicitly NOT the goal of the first weeks.**
 - **Sample (LOCKED): minimum 4 weeks or ~20 completed round-trip fills**, whichever
-  comes later, before the first cost read is judged.
+  comes later, before the mechanics verdict is judged.
 - **Measurement**: every auction fill is appended to
   `experiments/overnight-long/paper-fills.QQQ.jsonl` (ts, side, qty, fill price, official
-  auction print, diff in bps) by the paper runner. That log IS the measurement; no
-  hand-collected numbers.
+  auction print, diff in bps; degraded non-auction exits tagged `MKT`) by the paper
+  runner. That log IS the measurement; no hand-collected numbers.
 - **Auto-reject tripwire (LOCKED, no relitigation):**
-  - measured real round-trip cost **> 4–5 bps**, or
-  - **recurring odd-lot auction rejections** (MOC/MOO orders rejected or excluded from
-    the auction because ~20-share odd lots are ineligible)
+  - **recurring MOC/OPG order rejections** (API-level rejections are real regardless of
+    the fill simulator — odd-lot auction ineligibility included), or
+  - simulated round-trip cost **> 4–5 bps** (a simulator this adverse, or one that
+    cannot complete the cycle, is a real negative signal even though the converse
+    proves nothing), or
+  - recurring missed cutoffs / stranded positions / degraded `MKT` exits (mechanics
+    failures)
   - → the strategy goes **back to REJECT**. The walk-forward carry was conditional on
-    cheap auction fills; if they are not cheap (or not obtainable), the edge is not
-    there. No cost-model softening, no order-type workarounds, no re-argument.
+    cheap, obtainable auction fills. No cost-model softening, no order-type
+    workarounds, no re-argument.
 - **Operational guardrails during paper**: `paper=True` hardcoded; per-session typed
-  `paper` confirmation; ~$10k notional (~20 QQQ shares) on the $100k paper account;
-  2·R daily lock and 15% drawdown kill switch live in the runner path.
+  `paper` confirmation; SIP data required (runner refuses IEX); ~$10k notional
+  (~20 QQQ shares) on the $100k paper account; 2·R daily lock and 15% drawdown kill
+  switch enforced with state **persisted across the one-process-per-cycle lifetime**
+  (`paper-risk-state.QQQ.json`); stale daily-gate data refuses to trade.
 
 ## Known failure modes
 

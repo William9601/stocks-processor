@@ -176,9 +176,21 @@ class OvernightAuctionRunner:
 
     If the gate says no entry, the cycle ends flat after the close. If started
     with a position already open (crash recovery), it skips straight to the
-    morning exit. Every auction fill is appended to ``fill_log`` (JSONL):
-    that log IS the paper-phase measurement of real MOC/MOO cost vs the
-    2.9 bps round-trip hypothesis.
+    exit leg — exiting at TODAY's open if that is still ahead, or with a
+    degraded immediate market order if the market is already open (the spec
+    says flat by ~09:30; never hold an extra night by accident).
+
+    Every auction fill is appended to ``fill_log`` (JSONL) alongside the
+    official auction print. NOTE the honest limits of that measurement: Alpaca
+    *paper* fills come from a simulator, not from real auction participation,
+    so the diff-vs-official-print numbers exercise the plumbing and can
+    FALSIFY the cost hypothesis (a simulator showing big slippage or rejecting
+    the odd-lot orders is a real, negative signal) but can never CONFIRM the
+    2.9 bps round-trip hypothesis. See SPEC.md "Paper-phase gate".
+
+    ``risk_state`` (JSON path) persists RiskManager state across the
+    one-process-per-cycle lifetime — without it the 2*R daily lock and the
+    15% drawdown kill switch silently reset on every launch.
     """
 
     MOC_CUTOFF_MIN = 15  # stop trying to enter this many minutes before close
@@ -191,6 +203,7 @@ class OvernightAuctionRunner:
         broker: LiveBroker,
         symbol: str,
         fill_log: str,
+        risk_state: str | None = None,
         poll_seconds: float = 30.0,
         on_event=None,
     ):
@@ -199,12 +212,24 @@ class OvernightAuctionRunner:
         self.broker = broker
         self.symbol = symbol
         self.fill_log = Path(fill_log)
+        self.risk_state = Path(risk_state) if risk_state else None
         self.poll_seconds = poll_seconds
         self.on_event = on_event or (lambda msg: None)
         self._last_bar: pd.Timestamp | None = None
         # Injectable clock/sleep so the schedule logic is unit-testable.
         self._now = lambda: pd.Timestamp.now(tz="UTC")
         self._sleep = _time.sleep
+
+    # --- risk-state persistence (one process per cycle -> state must survive) ---
+    def _load_risk_state(self) -> None:
+        if self.risk_state is not None and self.risk_state.exists():
+            self.risk.restore_state(json.loads(self.risk_state.read_text()))
+            self.on_event(f"risk state restored from {self.risk_state}")
+
+    def _save_risk_state(self) -> None:
+        if self.risk_state is not None:
+            self.risk_state.parent.mkdir(parents=True, exist_ok=True)
+            self.risk_state.write_text(json.dumps(self.risk.to_state()))
 
     # --- fill log (append-only) ---
     def _log_fill(
@@ -247,8 +272,17 @@ class OvernightAuctionRunner:
             px = open_px if is_open else close_px
             if px:
                 return px
-            _time.sleep(20)
+            self._sleep(20)
         return None
+
+    def _await_fill(self, order_id: str, timeout: float) -> float | None:
+        """wait_fill that reports failure instead of raising — an unfilled or
+        rejected auction order must be handled, not crash the cycle."""
+        try:
+            return self.broker.wait_fill(order_id, timeout=timeout)
+        except Exception as exc:
+            self.on_event(f"order {order_id} not filled: {exc!r}")
+            return None
 
     # --- afternoon: decide + submit MOC ---
     def _poll_decision(self, now: pd.Timestamp) -> Order | None:
@@ -310,45 +344,103 @@ class OvernightAuctionRunner:
             self._sleep(min(remaining, 300.0))
 
     def run(self) -> None:
+        self._load_risk_state()
         today = self._now().tz_convert(ET).date()
         close_et = session_close_et(today)
 
         position = self.broker.position(self.symbol)
-        if position.is_flat and close_et is not None:
-            self.on_event(f"overnight cycle for {self.symbol}: session close {close_et.time()}")
-            oid = self._afternoon(today, close_et)
-            if oid is None:
-                return  # flat night — nothing to measure
-            # Wait out the closing auction, then log the entry fill.
-            self._sleep_until(close_et)
-            fill = self.broker.wait_fill(oid, timeout=300.0)
-            position = self.broker.position(self.symbol)
-            self._log_fill(
-                today, "MOC", True, position.qty, oid, fill,
-                self._official_print(today, is_open=False),
-            )
-        elif position.is_flat:
+        if not position.is_flat:
+            self.on_event(f"recovered an open position ({position.qty} {self.symbol}) — "
+                          "going straight to the exit leg")
+            self._exit_leg()
+            self._save_risk_state()
+            return
+
+        if close_et is None:
             self.on_event(f"{today} is not a trading session — nothing to do")
             return
+
+        self.on_event(f"overnight cycle for {self.symbol}: session close {close_et.time()}")
+        oid = self._afternoon(today, close_et)
+        self._save_risk_state()  # capture the afternoon's equity marks / day roll
+        if oid is None:
+            return  # flat night — nothing to measure
+
+        # Wait out the closing auction, then log the entry fill.
+        self._sleep_until(close_et)
+        fill = self._await_fill(oid, timeout=300.0)
+        position = self.broker.position(self.symbol)
+        if position.is_flat:
+            # MOC rejected or unfilled (e.g. odd-lot auction ineligibility).
+            # That is itself a paper-gate observation — log it, end the cycle.
+            self._log_fill(today, "MOC", True, 0.0, oid, fill,
+                           self._official_print(today, is_open=False))
+            self.on_event("MOC order produced no position (rejected/unfilled) — cycle over")
+            return
+        self._log_fill(today, "MOC", True, position.qty, oid, fill,
+                       self._official_print(today, is_open=False))
+
+        self._exit_leg()
+        self._save_risk_state()
+
+    def _exit_leg(self) -> None:
+        """Flatten the overnight position at the next opening auction — or at
+        TODAY's open if that is still ahead (crash recovery on the exit
+        morning), or immediately at market if the open already passed (the
+        spec says flat by ~09:30; never hold an accidental extra night)."""
+        position = self.broker.position(self.symbol)
+        if position.is_flat:
+            self.on_event("no position to exit")
+            return
+
+        now_et = self._now().tz_convert(ET)
+        today = now_et.date()
+        open_today = session_open_et(today)
+        close_today = session_close_et(today)
+
+        if open_today is not None and now_et < open_today:
+            exit_day, open_et = today, open_today  # this morning's auction
+        elif close_today is not None and open_today is not None and now_et < close_today:
+            # Market is already open with a position that should be gone:
+            # degraded immediate exit, honestly tagged as NOT an auction fill.
+            self.on_event("market already open — degraded immediate market exit")
+            oid = self.broker.submit_market(self.symbol, position.qty, is_buy=False, tif="day")
+            fill = self._await_fill(oid, timeout=120.0)
+            self._log_fill(today, "MKT", False, position.qty, oid, fill, None)
+            return
         else:
-            self.on_event(f"recovered an open position ({position.qty} {self.symbol}) — "
-                          "skipping to the morning exit")
+            exit_day = next_session(today)
+            if exit_day is None:
+                self.on_event("ERROR: no next session found on the calendar — position "
+                              "left open, manual intervention required")
+                return
+            open_et = session_open_et(exit_day)
 
-        # Overnight: hold until the next session's pre-open, then MOO out.
-        exit_day = next_session(today)
-        open_et = session_open_et(exit_day)
         self._sleep_until(open_et - pd.Timedelta(minutes=self.OPG_SUBMIT_MIN))
-
         position = self.broker.position(self.symbol)
         if position.is_flat:
             self.on_event("position already flat before the open — nothing to exit")
             return
-        oid = self.broker.submit_market(self.symbol, position.qty, is_buy=False, tif="opg")
-        self.on_event(f"MOO SELL {position.qty} {self.symbol} submitted (id {oid})")
+        qty = position.qty
+        oid = self.broker.submit_market(self.symbol, qty, is_buy=False, tif="opg")
+        self.on_event(f"MOO SELL {qty} {self.symbol} submitted (id {oid})")
         self._sleep_until(open_et)
-        fill = self.broker.wait_fill(oid, timeout=600.0)
-        self._log_fill(
-            exit_day, "MOO", False, position.qty, oid, fill,
-            self._official_print(exit_day, is_open=True),
-        )
+        fill = self._await_fill(oid, timeout=600.0)
+
+        if not self.broker.position(self.symbol).is_flat:
+            # OPG rejected/unfilled — fall back to a plain market sell so the
+            # book is flat, and log the degraded exit for the mechanics record.
+            self.on_event("MOO exit did not fill — submitting fallback market sell")
+            self._log_fill(exit_day, "MOO", False, qty, oid, fill,
+                           self._official_print(exit_day, is_open=True))
+            oid2 = self.broker.submit_market(self.symbol, qty, is_buy=False, tif="day")
+            fill2 = self._await_fill(oid2, timeout=120.0)
+            self._log_fill(exit_day, "MKT", False, qty, oid2, fill2, None)
+            if not self.broker.position(self.symbol).is_flat:
+                self.on_event("ERROR: fallback market exit ALSO failed — position still "
+                              "open, manual intervention required")
+            return
+
+        self._log_fill(exit_day, "MOO", False, qty, oid, fill,
+                       self._official_print(exit_day, is_open=True))
         self.on_event("overnight cycle complete — flat")

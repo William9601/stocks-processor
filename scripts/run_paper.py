@@ -107,12 +107,22 @@ def main() -> None:
 
     execution = cfg.get("execution", {})
     if execution.get("mode") == "overnight_auction":
-        # MOC entry / MOO exit cycle; every auction fill is appended to the
-        # fill log — that log is the paper-phase cost measurement.
+        # The fill log measures fills against official auction prints; on IEX
+        # neither the decision bar nor the reference print is the consolidated
+        # tape, which would silently invalidate the paper-gate numbers.
+        if feed.lower() != "sip":
+            sys.exit("overnight_auction mode requires ALPACA_DATA_FEED=sip — the fill "
+                     "log must reference official (consolidated) auction prints.")
         check_daily_source_fresh(cfg)
+        fill_log = REPO / execution["fill_log"]
+        # Risk-breaker state must survive the one-process-per-cycle lifetime,
+        # or the 2R daily lock / 15% kill switch reset on every launch.
+        default_state = Path(execution["fill_log"]).parent / f"paper-risk-state.{symbol}.json"
+        risk_state = REPO / execution.get("risk_state", str(default_state))
         runner = OvernightAuctionRunner(
             strat, risk, broker, symbol,
-            fill_log=str(REPO / execution["fill_log"]),
+            fill_log=str(fill_log),
+            risk_state=str(risk_state),
             poll_seconds=float(execution.get("poll_seconds", args.poll_seconds)),
             on_event=lambda m: print(f"[paper] {m}"),
         )

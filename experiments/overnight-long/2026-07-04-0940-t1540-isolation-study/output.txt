@@ -1,0 +1,12 @@
+evcost IS
+  offset= 5: sharpe=0.7719 trade_days=0.8388 net=+0.0366 dd=-0.0201 trades=858 sessions=1008
+  offset=20: sharpe=0.7749 trade_days=0.8420 net=+0.0367 dd=-0.0201 trades=858 sessions=1008
+evcost OOS
+  offset= 5: sharpe=0.5546 trade_days=0.6772 net=+0.0146 dd=-0.0155 trades=500 sessions=752
+  offset=20: sharpe=0.5516 trade_days=0.6734 net=+0.0145 dd=-0.0156 trades=500 sessions=752
+evcost WF
+  offset= 5: sharpe=1.0718 trade_days=1.1271 net=+0.0168 dd=-0.0104 trades=318 sessions=375
+  offset=20: sharpe=1.0749 trade_days=1.1306 net=+0.0168 dd=-0.0103 trades=318 sessions=375
+locked WF
+  offset= 5: sharpe=0.2268 trade_days=0.2096 net=+0.0035 dd=-0.0120 trades=318 sessions=375
+  offset=20: sharpe=0.2279 trade_days=0.2108 net=+0.0035 dd=-0.0119 trades=318 sessions=375

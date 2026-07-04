@@ -43,6 +43,32 @@ class RiskManager:
         self._day_locked = False  # daily loss limit tripped
         self._last_equity: float | None = None
 
+    # --- state persistence (live/paper: one process per overnight cycle) ---
+    # The breakers are only meaningful if peak equity, the day anchor, and the
+    # last session's closing mark survive process restarts; a fresh in-memory
+    # RiskManager every launch silently disarms them.
+    def to_state(self) -> dict:
+        return {
+            "peak_equity": self.peak_equity,
+            "halted": self.halted,
+            "day": self._day.isoformat() if self._day else None,
+            "day_start_equity": self._day_start_equity,
+            "day_locked": self._day_locked,
+            "last_equity": self._last_equity,
+        }
+
+    def restore_state(self, state: dict) -> None:
+        from datetime import date as _date
+
+        self.peak_equity = float(state.get("peak_equity", 0.0))
+        self.halted = bool(state.get("halted", False))
+        day = state.get("day")
+        self._day = _date.fromisoformat(day) if day else None
+        self._day_start_equity = float(state.get("day_start_equity", 0.0))
+        self._day_locked = bool(state.get("day_locked", False))
+        last = state.get("last_equity")
+        self._last_equity = float(last) if last is not None else None
+
     def on_bar(self, ctx: Context) -> None:
         """Day-roll + circuit-breaker check. The engine/runner calls this on
         EVERY bar — not only order-emitting ones — so day-start equity is
