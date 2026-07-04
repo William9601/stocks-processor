@@ -107,12 +107,14 @@ def main() -> None:
 
     execution = cfg.get("execution", {})
     if execution.get("mode") == "overnight_auction":
-        # The fill log measures fills against official auction prints; on IEX
-        # neither the decision bar nor the reference print is the consolidated
-        # tape, which would silently invalidate the paper-gate numbers.
-        if feed.lower() != "sip":
-            sys.exit("overnight_auction mode requires ALPACA_DATA_FEED=sip — the fill "
-                     "log must reference official (consolidated) auction prints.")
+        # Feed policy (free-tier compatible): the decision bars may be IEX
+        # real-time — the gate uses the PRIOR day's close, so the 15:40 bar
+        # only timestamps the decision and prices the sizing (bps-level
+        # accuracy is irrelevant there). The fill-log reference prints are
+        # ALWAYS official SIP history (broker.auction_prints), fetched once
+        # they are >15 minutes old, which free keys are permitted to query.
+        print(f"[paper] decision bars on {feed.upper()} real-time; official auction "
+              "prints from SIP history (~16-20 min delayed on free-tier keys).")
         check_daily_source_fresh(cfg)
         fill_log = REPO / execution["fill_log"]
         # Risk-breaker state must survive the one-process-per-cycle lifetime,

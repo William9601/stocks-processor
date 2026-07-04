@@ -91,18 +91,33 @@ class AlpacaPaperBroker:
         return str(order.id)
 
     def auction_prints(self, symbol: str, day) -> tuple[float | None, float | None]:
-        """(official open, official close) of ``day``'s daily SIP bar — the
-        auction prints the paper fill log measures slippage against. Either
-        can be None if the daily bar is not available yet."""
+        """(official open, official close) of ``day``'s daily bar — the
+        auction prints the paper fill log measures slippage against.
+
+        Always fetched from SIP (an IEX daily bar is not the consolidated
+        official print), independent of the bar feed. Free-tier compatible:
+        keys without a real-time SIP entitlement cannot query the most recent
+        ~15 minutes, so the request end is clamped to now-16min. Right after
+        an auction this returns (None, None) until the print is old enough —
+        callers retry (see OvernightAuctionRunner._official_print)."""
+        from alpaca.data.enums import DataFeed
         from alpaca.data.requests import StockBarsRequest
         from alpaca.data.timeframe import TimeFrame
 
+        from core.data.calendar import session_close_et, session_open_et
+
+        start = pd.Timestamp(day).tz_localize("America/New_York").tz_convert("UTC")
+        end = start + pd.Timedelta(days=1)
+        recency_cut = pd.Timestamp.now(tz="UTC") - pd.Timedelta(minutes=16)
+        end = min(end, recency_cut)
+        if end <= start:
+            return None, None
         req = StockBarsRequest(
             symbol_or_symbols=symbol,
             timeframe=TimeFrame.Day,
-            start=pd.Timestamp(day).to_pydatetime(),
-            end=(pd.Timestamp(day) + pd.Timedelta(days=1)).to_pydatetime(),
-            feed=self._feed,
+            start=start.to_pydatetime(),
+            end=end.to_pydatetime(),
+            feed=DataFeed.SIP,
         )
         try:
             df = self._data.get_stock_bars(req).df
@@ -111,9 +126,16 @@ class AlpacaPaperBroker:
             if df.empty:
                 return None, None
             row = df.iloc[0]
-            return float(row["open"]), float(row["close"])
         except Exception:
             return None, None
+        # A clamped (partial-day) bar has a valid OPEN once the opening print
+        # is inside the window, but its CLOSE is just the latest trade — only
+        # report each print if the window extends safely past it.
+        lag = pd.Timedelta(minutes=5)
+        open_et, close_et = session_open_et(day), session_close_et(day)
+        open_px = float(row["open"]) if open_et is None or end >= open_et + lag else None
+        close_px = float(row["close"]) if close_et is None or end >= close_et + lag else None
+        return open_px, close_px
 
     def wait_fill(self, order_id: str, timeout: float = 30.0) -> float:
         deadline = _time.time() + timeout

@@ -62,8 +62,8 @@ def main() -> None:
     key, secret = os.environ.get("ALPACA_API_KEY"), os.environ.get("ALPACA_SECRET_KEY")
     check("ALPACA_API_KEY / ALPACA_SECRET_KEY present", bool(key and secret))
     feed = os.environ.get("ALPACA_DATA_FEED", "iex")
-    check("ALPACA_DATA_FEED is sip (required by overnight mode)", feed.lower() == "sip",
-          f"feed={feed}")
+    check("bar feed configured", feed.lower() in ("iex", "sip"),
+          f"feed={feed} (decision bars; official prints always come from SIP history)")
     if not (key and secret):
         _summary()
 
@@ -105,10 +105,10 @@ def main() -> None:
         bars = broker.recent_bars(symbol, start, end)
         ok = bars is not None and len(bars) > 60
         last_bar = bars.index[-1].tz_convert(ET) if ok else None
-        check(f"5m SIP bars for last session ({last_sess})", ok,
+        check(f"5m {feed.upper()} bars for last session ({last_sess})", ok,
               f"{len(bars)} bars, last {last_bar}" if ok else "empty/short response")
     except Exception as exc:
-        check(f"5m SIP bars for last session ({last_sess})", False, repr(exc))
+        check(f"5m {feed.upper()} bars for last session ({last_sess})", False, repr(exc))
 
     # 5. official auction prints (what the fill log measures against)
     try:
@@ -118,20 +118,21 @@ def main() -> None:
     except Exception as exc:
         check("official auction prints (daily bar)", False, repr(exc))
 
-    # 6. real-time SIP entitlement (historical SIP works on free tier for
-    #    >15-min-old data; the 15:40 decision bar on Monday will NOT be —
-    #    the latest-trade endpoint exercises the live entitlement now)
+    # 6. real-time entitlement on the CONFIGURED bar feed (the 15:40 decision
+    #    bar is recent data; free-tier keys can query IEX real-time but not
+    #    SIP real-time — the latest-trade endpoint exercises this now)
     try:
         from alpaca.data.enums import DataFeed
         from alpaca.data.requests import StockLatestTradeRequest
 
-        req = StockLatestTradeRequest(symbol_or_symbols=symbol, feed=DataFeed.SIP)
+        bar_feed = DataFeed.SIP if feed.lower() == "sip" else DataFeed.IEX
+        req = StockLatestTradeRequest(symbol_or_symbols=symbol, feed=bar_feed)
         trade = broker._data.get_stock_latest_trade(req)[symbol]
-        check("real-time SIP entitlement (latest trade)", True,
+        check(f"real-time {feed.upper()} entitlement (latest trade)", True,
               f"last trade {trade.price} @ {trade.timestamp}")
     except Exception as exc:
-        check("real-time SIP entitlement (latest trade)", False,
-              f"{exc!r} — Monday's 15:40 bar needs a SIP-entitled key")
+        check(f"real-time {feed.upper()} entitlement (latest trade)", False,
+              f"{exc!r} — Monday's 15:40 decision bar needs this feed live")
 
     # 7. calendar: the next session's schedule the runner will follow
     nxt = next_session(now_et.date()) if session_close_et(now_et.date()) is None \

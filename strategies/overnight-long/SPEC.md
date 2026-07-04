@@ -457,10 +457,18 @@ verdict cannot be relitigated after the fills arrive.
     cheap, obtainable auction fills. No cost-model softening, no order-type
     workarounds, no re-argument.
 - **Operational guardrails during paper**: `paper=True` hardcoded; per-session typed
-  `paper` confirmation; SIP data required (runner refuses IEX); ~$10k notional
-  (~20 QQQ shares) on the $100k paper account; 2·R daily lock and 15% drawdown kill
-  switch enforced with state **persisted across the one-process-per-cycle lifetime**
-  (`paper-risk-state.QQQ.json`); stale daily-gate data refuses to trade.
+  `paper` confirmation; ~$10k notional (~20 QQQ shares) on the $100k paper account;
+  2·R daily lock and 15% drawdown kill switch enforced with state **persisted across
+  the one-process-per-cycle lifetime** (`paper-risk-state.QQQ.json`); stale daily-gate
+  data refuses to trade.
+- **Data-feed policy (free-tier key, amended 2026-07-04 after preflight):** the
+  account key has no real-time SIP entitlement, so the 15:40 **decision bar reads IEX
+  real-time** — harmless, because the gate uses the *prior day's* completed close and
+  the bar only timestamps the decision and prices the sizing. The **fill-log
+  reference prints are always official SIP history**, fetched once >15 minutes old
+  (free keys may query non-recent SIP), with a partial-day guard so a mid-day daily
+  bar can never masquerade as the official close. `scripts/preflight_paper.py` is the
+  read-only go/no-go check before any session.
 
 ## Known failure modes
 

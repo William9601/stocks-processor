@@ -95,3 +95,12 @@ Independent quant-reviewer pass over commits `6d4c718` + `4f5f2ef`:
   2024-12-30, so OOS counts 752 not 753 — 4th-decimal effect); the 200-SMA gate
   runs on back-adjusted closes (borderline gate days can differ live vs
   backtest); `_annualized_return` compounds the arithmetic mean (cosmetic).
+- **Amendment (2026-07-04, post-review):** the read-only preflight
+  (`scripts/preflight_paper.py`) found the account key has NO real-time SIP
+  entitlement — the earlier "runner refuses IEX" fix would have failed Monday's
+  decision poll outright. Per user decision, the runner was adapted to the free
+  tier: decision bars on IEX real-time; official auction prints always SIP
+  history fetched >15 min delayed, with a partial-day guard so a clamped daily
+  bar can never report a mid-session price as the official close. Preflight also
+  found the paper account at $10k (not the assumed $100k); user resets it to
+  $100k in the Alpaca dashboard before Monday.

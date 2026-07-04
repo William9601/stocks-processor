@@ -264,15 +264,18 @@ class OvernightAuctionRunner:
             fh.write(json.dumps(entry) + "\n")
         self.on_event(f"LOGGED {order_type} fill: {entry}")
 
-    def _official_print(self, session_date, is_open: bool, retries: int = 6) -> float | None:
-        """Official auction print for the day, retried while the daily bar
-        propagates (can lag the auction by a minute or two)."""
+    def _official_print(self, session_date, is_open: bool, retries: int = 12) -> float | None:
+        """Official auction print for the day, retried while it becomes
+        queryable. Two delays stack: the consolidated print takes a minute or
+        two to land in the daily bar, and free-tier keys cannot query SIP data
+        newer than ~15 minutes (the broker clamps for this) — so the retry
+        window spans ~24 minutes. Paid SIP keys succeed on an early attempt."""
         for _ in range(retries):
             open_px, close_px = self.broker.auction_prints(self.symbol, session_date)
             px = open_px if is_open else close_px
             if px:
                 return px
-            self._sleep(20)
+            self._sleep(120)
         return None
 
     def _await_fill(self, order_id: str, timeout: float) -> float | None:
