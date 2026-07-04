@@ -1,12 +1,26 @@
 # Strategy: overnight-long
 
-- **Status**: qualified paper-candidate (QQQ gated only — borderline OOS, walk-forward-carried; pending user sign-off + 4 blocking fixes)
+- **Status**: PAPER (QQQ gated only) — user-approved 2026-07-03, first session planned 2026-07-06; all 4 blocking fixes landed and re-judged 2026-07-04 (verdict v3); paper gate pre-registered below
 - **Created**: 2026-07-03
 - **One-liner**: Harvest the equity-index overnight risk premium with a single leg — buy a liquid index ETF at the regular-session close (MOC) and exit at the next open (MOO), gated by a risk-on 200-day-SMA regime — deliberately dropping the structurally-edgeless intraday-short leg that sank the retired overnight-drift strategy.
 - **Implementation**: `strategies/overnight-long/strategy.py` (+ 4 configs: SPY/QQQ ×
   gated/ungated, `tests/`), on the shared core (reuses the MOC/MOO machinery built for
   overnight-drift; no new core code). Data is dividend+split adjusted (`*_adj.parquet`,
   via the new `fetch_data.py --adjustment all`) — mandatory for a long-only overnight book.
+- **Result v3 — blocking fixes landed, 15:40 decision bar re-judged; candidacy STANDS
+  (2026-07-04)**: All four v2 blockers are fixed in core (zero-filled Sharpe headline +
+  `sharpe_trade_days` legacy field; live every-bar 2·R day-lock; calendar-aware sessions
+  with phantom half-day bars filtered at load; MOC fills only on the session-final bar).
+  The decision bar moved 15:55 → 15:40 (`decision_offset_minutes: 20`, offsets from the
+  true session close — 12:40 on half-days) to respect Alpaca's ~15:45 MOC submission
+  cutoff; isolation runs show the time shift itself is neutral (≤0.004 Sharpe, mixed
+  sign). Re-judged suite (`experiments/overnight-long/2026-07-04-0923-t1540-*`, master
+  verdict in `...-t1540-qqqgate-wf-evcost/notes.md`): IS 0.7749 zero-fill / 0.8420
+  trade-days; **OOS 0.5516 / 0.6734 — still below the 0.7 bar, slightly weaker than v2
+  because phantom fills were removed and half-days now trade (honest corrections, not
+  tuning)**; walk-forward 2025-01→2026-07 **1.0749 / 1.1306, net +1.68%, DD −1.03%,
+  still net-positive at the locked 7 bps** — the WF continues to carry the candidacy.
+  Promoted to paper per the pre-registered gate below.
 - **Result v2 — BORDERLINE OOS, WALK-FORWARD-CARRIED; qualified paper candidate, QQQ
   gated only (2026-07-03)**: The execution-cost study recommended below was run
   (pre-registered method: `experiments/execution-cost-study/2026-07-03-2319-spy-qqq-auction/`)
@@ -261,15 +275,14 @@ budget, inside book-level circuit breakers. Sizing is delegated to `core/risk`.
 - **Per-cycle loss limit**: a single realized cycle loss worse than **2 · R** (an
   overnight gap ~2× `G`) triggers **halt-and-review**: no new entries until manually
   inspected. Baseline flagged.
-  - **KNOWN CORE BUG (flagged, must fix before paper):** per the parent's review
-    (`experiments/overnight-drift/.../notes.md`) and `core/risk/sizing.py`, the `2·R`
-    per-cycle limit is **effectively dead for sparse-order strategies** — `size()` runs
-    only on bars where the strategy emits an order, so day-start equity is captured too
-    late to measure the day's loss. **This strategy emits at most two orders per day and
-    is exactly the sparse-order case the bug breaks.** The `2·R` limit therefore cannot be
-    relied on in the current core; it is documented here as intended behavior but **the
-    15% drawdown kill switch is the only circuit breaker that actually fires today.** Fix
-    is a core prerequisite before any paper promotion.
+  - **CORE BUG FIXED (2026-07-04):** the `2·R` limit was historically dead for
+    sparse-order strategies (`size()` ran only on order-emitting bars, so day-start
+    equity was captured after the morning exit realized the overnight loss). Fixed in
+    core: `RiskManager.on_bar()` now runs on **every** bar (backtest engine and live
+    runner), and each day anchors at the **prior session's closing equity**, so an
+    overnight gap loss realized at the open counts against that day's `2·R` lock.
+    Covered by `core/tests/test_risk.py`. (It never fires in the judged windows — worst
+    night ≈1.1·R — so the fix changes no backtest numbers.)
 - **Max drawdown kill switch**: halt and require manual review if peak-to-trough equity
   drawdown exceeds **15%** (baseline, matches parent, flagged). Realistic path: a cluster
   of overnight gap-down opens in a still-risk-on tape (price above the 200-SMA when the
@@ -405,6 +418,33 @@ reject is an expected and honest outcome, not a failure to be tuned away.**
   regime gate contributes vs. the raw unconditional premium; it is declared now so it cannot
   be introduced post hoc as an instrument-shopping escape hatch. The gated baseline remains
   the primary strategy; the ungated variant is diagnostic and held to the same locked bars.
+
+## Paper-phase gate (PRE-REGISTERED 2026-07-04, before the first paper order — LOCKED)
+
+Per workflow gate 6, the sample size and tolerances are fixed up front so the paper
+verdict cannot be relitigated after the fills arrive.
+
+- **What paper measures (week 1 through week 4): execution cost, NOT profit.** The
+  candidacy rests on the measured 2.90 bps round-trip auction-cost hypothesis
+  (`experiments/execution-cost-study/2026-07-03-2319-spy-qqq-auction/`). Paper exists to
+  verify that hypothesis with real MOC/MOO fills on the paper account. **Profit judgment
+  needs months of cycles and is explicitly NOT the goal of the first weeks.**
+- **Sample (LOCKED): minimum 4 weeks or ~20 completed round-trip fills**, whichever
+  comes later, before the first cost read is judged.
+- **Measurement**: every auction fill is appended to
+  `experiments/overnight-long/paper-fills.QQQ.jsonl` (ts, side, qty, fill price, official
+  auction print, diff in bps) by the paper runner. That log IS the measurement; no
+  hand-collected numbers.
+- **Auto-reject tripwire (LOCKED, no relitigation):**
+  - measured real round-trip cost **> 4–5 bps**, or
+  - **recurring odd-lot auction rejections** (MOC/MOO orders rejected or excluded from
+    the auction because ~20-share odd lots are ineligible)
+  - → the strategy goes **back to REJECT**. The walk-forward carry was conditional on
+    cheap auction fills; if they are not cheap (or not obtainable), the edge is not
+    there. No cost-model softening, no order-type workarounds, no re-argument.
+- **Operational guardrails during paper**: `paper=True` hardcoded; per-session typed
+  `paper` confirmation; ~$10k notional (~20 QQQ shares) on the $100k paper account;
+  2·R daily lock and 15% drawdown kill switch live in the runner path.
 
 ## Known failure modes
 

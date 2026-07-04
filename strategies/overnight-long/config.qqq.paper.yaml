@@ -1,0 +1,53 @@
+# Overnight-long — QQQ gated, PAPER TRADING (Alpaca paper account only).
+#
+# Pre-registered paper gate (SPEC.md "Paper-phase gate"): minimum 4 weeks /
+# ~20 fills for the first cost read; auto-reject if measured real round-trip
+# cost > 4-5 bps or recurring odd-lot auction rejections. Week 1 measures fill
+# quality vs the 2.90 bps hypothesis, NOT profit.
+#
+# Run (user, ~15:25 ET on a session day; requires .env with paper keys):
+#   uv run --extra paper python scripts/run_paper.py strategies/overnight-long/config.qqq.paper.yaml
+# and type 'paper' at the per-session confirmation (hard rule, do not bypass).
+
+strategy:
+  path: strategies/overnight-long
+  params:
+    decision_offset_minutes: 20   # decision bar closes 20 min before the session close (15:40 full day; Alpaca MOC cutoff ~15:45)
+    use_regime_gate: true
+    sma_window: 200
+    overnight_vol_window: 20
+    gap_vol_mult: 3.0
+    gap_floor: 0.05
+    daily_source: data/QQQ_daily_adj_wf.parquet   # must be fresh through the prior session (run_paper checks)
+
+instrument:
+  symbol: QQQ
+  bar_minutes: 5
+
+risk:
+  risk_per_trade: 0.005
+  daily_loss_limit_r: 2.0
+  max_drawdown: 0.15
+  point_value: 1.0
+
+costs:                      # REFERENCE ONLY — paper fills are measured, not modeled.
+  commission_per_unit: 0.0  # (evidence-based costs from the 2026-07-03 study, kept
+  half_spread_bps: 0.0      #  so this config stays comparable to the judged runs)
+  slippage_bps: 0.5855
+  close_slippage_bps: 2.3138
+  stop_slippage_bps: 3.0
+
+execution:
+  mode: overnight_auction   # MOC entry / MOO exit via OvernightAuctionRunner
+  fill_log: experiments/overnight-long/paper-fills.QQQ.jsonl  # append-only; THE paper measurement
+  poll_seconds: 30
+
+backtest:                   # unused in paper; kept for config-schema symmetry
+  starting_cash: 100000.0
+  in_sample:      { start: "2018-01-01", end: "2021-12-31" }
+  out_of_sample:  { start: "2022-01-01", end: "2024-12-31" }
+  walk_forward:   { start: "2025-01-01", end: null }
+
+data:
+  source: data/QQQ_5m_adj_wf.parquet
+  provider: alpaca-sip

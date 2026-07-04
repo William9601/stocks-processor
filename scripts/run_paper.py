@@ -16,14 +16,42 @@ import os
 import sys
 from pathlib import Path
 
+import pandas as pd
 import yaml
 
-from core.execution.live_runner import LiveRunner
+from core.data.calendar import session_close_et
+from core.execution.live_runner import LiveRunner, OvernightAuctionRunner
 from core.execution.paper import AlpacaPaperBroker
 from core.loader import load_strategy
 from core.risk.sizing import RiskLimits, RiskManager
 
 REPO = Path(__file__).resolve().parents[1]
+
+
+def check_daily_source_fresh(cfg: dict) -> None:
+    """The regime gate reads the LAST COMPLETED daily close from the daily
+    parquet — a stale file silently gates on old data. Refuse to trade unless
+    it covers the most recent completed session."""
+    source = cfg["strategy"]["params"].get("daily_source")
+    if source is None:
+        return
+    idx = pd.read_parquet(REPO / source).index
+    last_date = pd.Timestamp(idx.max()).tz_convert("America/New_York").date()
+    first_date = pd.Timestamp(idx.min()).tz_convert("America/New_York").date()
+    today = pd.Timestamp.now(tz="America/New_York").date()
+    # Most recent completed session strictly before today.
+    prev = today - pd.Timedelta(days=1)
+    while session_close_et(prev) is None:
+        prev -= pd.Timedelta(days=1)
+    if last_date < prev:
+        sys.exit(
+            f"STALE daily data: {source} ends {last_date}, but the last completed "
+            f"session is {prev}. The 200-SMA gate would run on old closes.\n"
+            f"Refresh it first, e.g.:\n"
+            f"  uv run --extra paper python scripts/fetch_data.py --symbol "
+            f"{cfg['instrument']['symbol']} --start {first_date} --end {today} "
+            f"--timeframe daily --adjustment all --feed sip --out {source}"
+        )
 
 
 def load_dotenv(path: Path) -> None:
@@ -76,6 +104,21 @@ def main() -> None:
     strat = load_strategy(REPO / cfg["strategy"]["path"], cfg["strategy"].get("params", {}))
     risk = RiskManager(RiskLimits(**cfg["risk"]))
     broker = AlpacaPaperBroker(key, secret, feed=feed)
+
+    execution = cfg.get("execution", {})
+    if execution.get("mode") == "overnight_auction":
+        # MOC entry / MOO exit cycle; every auction fill is appended to the
+        # fill log — that log is the paper-phase cost measurement.
+        check_daily_source_fresh(cfg)
+        runner = OvernightAuctionRunner(
+            strat, risk, broker, symbol,
+            fill_log=str(REPO / execution["fill_log"]),
+            poll_seconds=float(execution.get("poll_seconds", args.poll_seconds)),
+            on_event=lambda m: print(f"[paper] {m}"),
+        )
+        runner.run()
+        return
+
     runner = LiveRunner(
         strat, risk, broker, symbol,
         session_start=cfg["strategy"]["params"].get("ref_start", "09:30"),

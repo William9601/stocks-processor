@@ -21,7 +21,7 @@ last bar actually present on that date.
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, timedelta
 from functools import lru_cache
 
 import pandas as pd
@@ -46,6 +46,27 @@ def session_close_et(day: date) -> pd.Timestamp | None:
         return cal.session_close(ts).tz_convert(ET)
     except Exception:  # date outside the calendar's range
         return None
+
+
+def session_open_et(day: date) -> pd.Timestamp | None:
+    """Official open (ET) of the session on ``day``; None if not a session."""
+    cal = _xnys()
+    ts = pd.Timestamp(day)
+    try:
+        if not cal.is_session(ts):
+            return None
+        return cal.session_open(ts).tz_convert(ET)
+    except Exception:
+        return None
+
+
+def next_session(day: date) -> date | None:
+    """First session date strictly after ``day`` (None if outside calendar)."""
+    for i in range(1, 15):  # longest US market gap is a few days
+        candidate = day + timedelta(days=i)
+        if session_close_et(candidate) is not None:
+            return candidate
+    return None
 
 
 def session_closes(et_index: pd.DatetimeIndex) -> dict[date, pd.Timestamp]:

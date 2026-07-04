@@ -72,19 +72,48 @@ class AlpacaPaperBroker:
         return Position(side=side, qty=abs(qty), avg_price=float(p.avg_entry_price))
 
     # --- orders ---
-    def submit_market(self, symbol: str, qty: float, is_buy: bool) -> str:
+    def submit_market(self, symbol: str, qty: float, is_buy: bool, tif: str = "day") -> str:
+        """Market order. ``tif`` maps to Alpaca time-in-force: ``day`` (regular
+        market order), ``cls`` (market-on-close — submit before ~15:45 ET),
+        ``opg`` (market-on-open — submit before ~09:28 ET)."""
         from alpaca.trading.enums import OrderSide, TimeInForce
         from alpaca.trading.requests import MarketOrderRequest
 
+        tif_map = {"day": "DAY", "cls": "CLS", "opg": "OPG"}
         order = self._trading.submit_order(
             MarketOrderRequest(
                 symbol=symbol,
                 qty=abs(qty),
                 side=OrderSide.BUY if is_buy else OrderSide.SELL,
-                time_in_force=TimeInForce.DAY,
+                time_in_force=TimeInForce[tif_map[tif.lower()]],
             )
         )
         return str(order.id)
+
+    def auction_prints(self, symbol: str, day) -> tuple[float | None, float | None]:
+        """(official open, official close) of ``day``'s daily SIP bar — the
+        auction prints the paper fill log measures slippage against. Either
+        can be None if the daily bar is not available yet."""
+        from alpaca.data.requests import StockBarsRequest
+        from alpaca.data.timeframe import TimeFrame
+
+        req = StockBarsRequest(
+            symbol_or_symbols=symbol,
+            timeframe=TimeFrame.Day,
+            start=pd.Timestamp(day).to_pydatetime(),
+            end=(pd.Timestamp(day) + pd.Timedelta(days=1)).to_pydatetime(),
+            feed=self._feed,
+        )
+        try:
+            df = self._data.get_stock_bars(req).df
+            if isinstance(df.index, pd.MultiIndex):
+                df = df.xs(symbol, level=0)
+            if df.empty:
+                return None, None
+            row = df.iloc[0]
+            return float(row["open"]), float(row["close"])
+        except Exception:
+            return None, None
 
     def wait_fill(self, order_id: str, timeout: float = 30.0) -> float:
         deadline = _time.time() + timeout
