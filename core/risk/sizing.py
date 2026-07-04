@@ -41,12 +41,28 @@ class RiskManager:
         self._day = None
         self._day_start_equity = 0.0
         self._day_locked = False  # daily loss limit tripped
+        self._last_equity: float | None = None
+
+    def on_bar(self, ctx: Context) -> None:
+        """Day-roll + circuit-breaker check. The engine/runner calls this on
+        EVERY bar — not only order-emitting ones — so day-start equity is
+        captured before the day's fills distort it. Idempotent within a bar.
+        """
+        self._roll_day(ctx)
+        self._update_circuit_breakers(ctx)
+        self._last_equity = ctx.equity
 
     def _roll_day(self, ctx: Context) -> None:
         day = ctx.now_et.date()
         if day != self._day:
             self._day = day
-            self._day_start_equity = ctx.equity
+            # Anchor the day at the prior session's closing equity so a loss
+            # realized by the first fills of the morning (e.g. an overnight
+            # gap closed at the open) still counts against today's 2*R limit.
+            # On the very first bar ever there is no prior mark; use current.
+            self._day_start_equity = (
+                self._last_equity if self._last_equity is not None else ctx.equity
+            )
             self._day_locked = False
 
     def _update_circuit_breakers(self, ctx: Context) -> None:
@@ -66,8 +82,10 @@ class RiskManager:
         ``ref_price`` is the best current estimate of the fill price (used only
         for the no-leverage notional cap).
         """
-        self._roll_day(ctx)
-        self._update_circuit_breakers(ctx)
+        # Re-run the hook defensively: correct even if a caller only invokes
+        # size() on order bars (the sparse-order case that killed the 2*R
+        # limit when the day-roll lived exclusively here).
+        self.on_bar(ctx)
 
         # Closing is always permitted — never trap an open position.
         if order.action is Action.CLOSE:

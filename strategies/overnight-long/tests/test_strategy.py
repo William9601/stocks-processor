@@ -37,20 +37,25 @@ def _strategy(daily_source: Path, **params):
     return load_strategy(STRAT_DIR, {"daily_source": str(daily_source), **SMALL, **params})
 
 
-def _ctx(et_date, hhmm: str, position: Position, close=300.0) -> Context:
+def _ctx(et_date, hhmm: str, position: Position, close=300.0, session_close=None) -> Context:
     ts = pd.Timestamp(f"{et_date} {hhmm}", tz="America/New_York").tz_convert("UTC")
     hist = pd.DataFrame(
         {"open": [close], "high": [close], "low": [close], "close": [close], "volume": [1e6]},
         index=pd.DatetimeIndex([ts], name="ts"),
     )
-    return Context("SPY", hist, position, cash=100_000, equity=100_000)
+    extra = {}
+    if session_close is not None:
+        extra["session_close_et"] = pd.Timestamp(
+            f"{et_date} {session_close}", tz="America/New_York"
+        )
+    return Context("SPY", hist, position, cash=100_000, equity=100_000, extra=extra)
 
 
 def test_gated_enters_overnight_long_when_risk_on(tmp_path):
     path, dates = _daily_file(tmp_path, [100, 101, 102, 103, 104, 105, 106])
     strat = _strategy(path, use_regime_gate=True)
     d = (dates[-1] + pd.offsets.BDay(1)).date()
-    orders = strat.on_bar(_ctx(d, "15:55", Position()))
+    orders = strat.on_bar(_ctx(d, "15:40", Position()))
     assert len(orders) == 1
     o = orders[0]
     assert o.action is Action.ENTER_LONG
@@ -62,14 +67,14 @@ def test_gated_sits_out_when_risk_off(tmp_path):
     path, dates = _daily_file(tmp_path, [106, 105, 104, 103, 102, 101, 100])  # downtrend
     strat = _strategy(path, use_regime_gate=True)
     d = (dates[-1] + pd.offsets.BDay(1)).date()
-    assert strat.on_bar(_ctx(d, "15:55", Position())) == []
+    assert strat.on_bar(_ctx(d, "15:40", Position())) == []
 
 
 def test_ungated_holds_even_when_below_sma(tmp_path):
     path, dates = _daily_file(tmp_path, [106, 105, 104, 103, 102, 101, 100])  # downtrend
     strat = _strategy(path, use_regime_gate=False)  # hold every night
     d = (dates[-1] + pd.offsets.BDay(1)).date()
-    orders = strat.on_bar(_ctx(d, "15:55", Position()))
+    orders = strat.on_bar(_ctx(d, "15:40", Position()))
     assert len(orders) == 1 and orders[0].action is Action.ENTER_LONG
 
 
@@ -82,6 +87,25 @@ def test_exits_at_open_and_never_shorts(tmp_path):
     # Exit the overnight long at the open — and only that. No short leg.
     assert [o.action for o in orders] == [Action.CLOSE]
     assert orders[0].fill is FillTiming.NEXT_OPEN
+
+
+def test_half_day_decisions_offset_from_early_close(tmp_path):
+    """On a 13:00 close the decision bar is 12:40 and the exit bar 13:00 —
+    nothing fires at the full-day 15:40/16:00 times."""
+    path, dates = _daily_file(tmp_path, [100, 101, 102, 103, 104, 105, 106])
+    strat = _strategy(path, use_regime_gate=True)
+    d = (dates[-1] + pd.offsets.BDay(1)).date()
+
+    orders = strat.on_bar(_ctx(d, "12:40", Position(), session_close="13:00"))
+    assert len(orders) == 1 and orders[0].action is Action.ENTER_LONG
+
+    long_pos = Position(side=Side.LONG, qty=10, avg_price=300.0)
+    orders = strat.on_bar(_ctx(d, "13:00", long_pos, session_close="13:00"))
+    assert [o.action for o in orders] == [Action.CLOSE]
+
+    # The full-day times are dead on a half-day (those bars would be phantom).
+    assert strat.on_bar(_ctx(d, "15:40", Position(), session_close="13:00")) == []
+    assert strat.on_bar(_ctx(d, "16:00", long_pos, session_close="13:00")) == []
 
 
 def test_integration_only_long_trades_span_overnight(tmp_path):

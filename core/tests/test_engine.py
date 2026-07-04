@@ -86,18 +86,43 @@ class _EnterOnceMOC:
         return []
 
 
-def test_market_on_close_fills_at_next_bar_close():
+def test_market_on_close_fills_at_session_close():
     feed = _feed()
     costs = CostModel(half_spread_bps=1.0, slippage_bps=1.0, close_slippage_bps=2.0)
     engine = BacktestEngine(_EnterOnceMOC(), feed, RiskManager(), costs)
     engine.run()
 
     entry = engine.broker.fills[0]
-    idx = feed.bars.index
-    # Decided on bar 0, filled on bar 1 — at its CLOSE, not its open.
-    assert entry.time == idx[1]
-    expected = float(feed.bars.iloc[1]["close"]) * (1 + (1.0 + 2.0) / 10_000)  # close-auction bps
+    # Decided on bar 0 (09:35), the MOC order rests until the closing auction:
+    # it fills at the CLOSE of the session's final bar, never mid-session.
+    session_last = feed.bars.index[feed.bars.index.tz_convert("America/New_York").date
+                                   == feed.bars.index[0].tz_convert("America/New_York").date()][-1]
+    assert entry.time == session_last
+    close_px = float(feed.bars.loc[session_last, "close"])
+    expected = close_px * (1 + (1.0 + 2.0) / 10_000)  # close-auction bps
     assert abs(entry.price - expected) < 1e-6
+
+
+def test_unfilled_moc_expires_at_session_roll():
+    """An MOC order whose session-close bar never arrives (truncated data)
+    must die at the session roll, not fill on a later day's close."""
+    import numpy as np
+    import pandas as pd
+
+    def _day(day, end):
+        idx = pd.date_range(f"{day} 09:35", f"{day} {end}", freq="5min",
+                            tz="America/New_York").tz_convert("UTC")
+        px = np.full(len(idx), 300.0)
+        return pd.DataFrame({"open": px, "high": px, "low": px, "close": px,
+                             "volume": np.full(len(idx), 1e5)}, index=idx)
+
+    # Real XNYS sessions; day 1's data is truncated at 15:55 (no 16:00 bar).
+    bars = pd.concat([_day("2024-06-03", "15:55"), _day("2024-06-04", "16:00")])
+    bars.index.name = "ts"
+    engine = BacktestEngine(_EnterOnceMOC(), DataFeed("SPY", bars), RiskManager(), CostModel())
+    engine.run()
+    assert engine.broker.fills == []
+    assert engine.broker.trades == []
 
 
 def test_resting_stop_false_places_no_stop():

@@ -19,6 +19,7 @@ import time as _time
 import pandas as pd
 
 from core.data.alpaca import bars_to_canonical, filter_rth
+from core.data.calendar import filter_to_sessions
 from core.strategy import Position, Side
 
 
@@ -52,7 +53,9 @@ class AlpacaPaperBroker:
         )
         bars = self._data.get_stock_bars(req)
         canonical = bars_to_canonical(bars.df, symbol, bar_minutes=5, timestamp="open")
-        return filter_rth(canonical)
+        # filter_to_sessions drops after-hours prints past a half-day's 13:00
+        # close that filter_rth's fixed 09:35..16:00 window would let through.
+        return filter_to_sessions(filter_rth(canonical))
 
     # --- account / position ---
     def account(self) -> tuple[float, float]:

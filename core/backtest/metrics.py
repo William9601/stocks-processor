@@ -3,6 +3,13 @@
 Because the strategy is flat overnight, daily P&L is well defined and the
 equity curve is built by summing each day's realized trade P&L. Sharpe/Sortino
 are annualized from daily returns (252 trading days).
+
+Daily returns are zero-filled over the *true session calendar* of the run
+window: a session where the strategy sat out (e.g. a regime gate held it flat)
+is a real 0%-return day and belongs in the Sharpe denominator. The old
+trade-days-only convention silently dropped those sessions before the √252
+annualization, overstating Sharpe for sparse/gated strategies; it is kept as
+``sharpe_trade_days`` so committed runs remain comparable.
 """
 
 from __future__ import annotations
@@ -15,16 +22,31 @@ import pandas as pd
 from core.strategy import Side
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+    from datetime import date
+
     from core.execution.broker import Trade
 
 TRADING_DAYS = 252
 
 
-def _daily_equity(trades: list[Trade], starting_equity: float) -> pd.Series:
-    if not trades:
+def _daily_equity(
+    trades: list[Trade],
+    starting_equity: float,
+    session_days: Sequence[date] | None = None,
+) -> pd.Series:
+    """Daily-close equity curve. With ``session_days``, flat sessions are
+    zero-filled so the curve spans the true session calendar; without it,
+    only trade days appear (the legacy convention)."""
+    if not trades and session_days is None:
         return pd.Series([starting_equity])
     rows = [(t.day, t.net_pnl) for t in trades]
     daily = pd.DataFrame(rows, columns=["day", "pnl"]).groupby("day")["pnl"].sum().sort_index()
+    if session_days is not None:
+        # Union keeps any trade P&L whose exit day is somehow off-calendar
+        # rather than silently dropping it.
+        calendar = pd.Index(sorted(set(session_days) | set(daily.index)), name="day")
+        daily = daily.reindex(calendar, fill_value=0.0)
     return starting_equity + daily.cumsum()
 
 
@@ -34,9 +56,15 @@ def compute_metrics(
     sample: str,
     start_date: str,
     end_date: str,
+    session_days: Sequence[date] | None = None,
 ) -> dict:
-    equity = _daily_equity(trades, starting_equity)
+    equity = _daily_equity(trades, starting_equity, session_days)
     daily_ret = equity.pct_change().dropna()
+
+    # Legacy trade-days-only convention, kept for comparability with runs
+    # committed before the zero-fill fix.
+    equity_td = _daily_equity(trades, starting_equity)
+    daily_ret_td = equity_td.pct_change().dropna()
 
     net_pnls = np.array([t.net_pnl for t in trades], dtype=float)
     gross_pnls = np.array([t.net_pnl + t.costs for t in trades], dtype=float)
@@ -55,6 +83,7 @@ def compute_metrics(
         "gross_return": (starting_equity + gross_pnls.sum()) / starting_equity - 1.0,
         "annualized_return": _annualized_return(daily_ret),
         "sharpe": sharpe,
+        "sharpe_trade_days": _annualized_sharpe(daily_ret_td),
         "sortino": sortino,
         "max_drawdown": max_dd,
         "max_drawdown_days": dd_days,
@@ -63,6 +92,7 @@ def compute_metrics(
         "avg_win": float(wins.mean()) if len(wins) else 0.0,
         "avg_loss": float(losses.mean()) if len(losses) else 0.0,
         "trade_count": len(trades),
+        "session_count": len(session_days) if session_days is not None else None,
         "turnover": float(sum(abs(t.qty * t.entry_price) for t in trades) / starting_equity),
         "cost_drag": total_costs / starting_equity,
         "long_pnl": float(sum(t.net_pnl for t in trades if t.side is Side.LONG)),

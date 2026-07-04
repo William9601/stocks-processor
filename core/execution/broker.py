@@ -91,9 +91,26 @@ class BacktestBroker:
         """Fill queued NEXT_OPEN orders at this bar's open."""
         self._fill_pending(FillTiming.NEXT_OPEN, float(bar["open"]), ts, is_close=False)
 
-    def process_close(self, bar: pd.Series, ts: pd.Timestamp) -> None:
-        """Fill queued NEXT_CLOSE (market-on-close) orders at this bar's close."""
+    def process_close(
+        self, bar: pd.Series, ts: pd.Timestamp, is_session_close: bool = True
+    ) -> None:
+        """Fill queued NEXT_CLOSE (MOC) orders at this bar's close.
+
+        A real MOC order fills only in the closing auction, so the engine
+        passes ``is_session_close`` and fills happen only on the session's
+        final bar — a decision bar earlier in the afternoon (e.g. 15:40, ahead
+        of the broker's MOC submission cutoff) queues an order that rests
+        until the close prints.
+        """
+        if not is_session_close:
+            return
         self._fill_pending(FillTiming.NEXT_CLOSE, float(bar["close"]), ts, is_close=True)
+
+    def expire_pending(self, timing: FillTiming) -> None:
+        """Drop unfilled orders of one timing (engine calls this at session
+        roll so an MOC order that never met a session-close bar dies rather
+        than filling on a later day's close)."""
+        self._pending = [o for o in self._pending if o.fill is not timing]
 
     def _fill_pending(
         self, timing: FillTiming, ref_px: float, ts: pd.Timestamp, is_close: bool

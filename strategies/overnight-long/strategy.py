@@ -1,9 +1,9 @@
 """Overnight-long — single-leg harvest of the equity-index overnight premium.
 
-Buy a liquid index ETF at the regular-session close (market-on-close), hold
-through the closed market, sell at the next regular-session open (market-on-open).
-Long-only, overnight-only, flat during the day. Optionally gated by a risk-on
-trend regime (hold only when the most recent completed daily close is above its
+Buy a liquid index ETF at the regular-session close (MOC), hold through the
+closed market, sell at the next regular-session open (MOO). Long-only,
+overnight-only, flat during the day. Optionally gated by a risk-on trend
+regime (hold only when the most recent completed daily close is above its
 200-day SMA); the ungated variant holds every night.
 
 This is the retired ``overnight-drift`` strategy with the intraday-short leg
@@ -13,14 +13,23 @@ the overnight-long leg alone was ~breakeven under the same costs. See SPEC.md.
 There is no intraday stop (the market is closed overnight), so the position is
 sized off a gap budget rather than a stop, and rests no protective stop.
 
-Fill timing maps onto the core's FillTiming:
-  - MOC entry (fill at the coming close) -> decided on the 15:55 bar, NEXT_CLOSE
-  - MOO exit  (fill at the coming open)  -> decided on the 16:00 bar, NEXT_OPEN
+Decision times are OFFSETS from the session's true close (which the engine or
+runner supplies as ``ctx.extra["session_close_et"]``; 13:00 ET on half-days),
+never hardcoded clock times:
+
+  - MOC entry: decided on the bar closing ``decision_offset_minutes`` before
+    the session close (default 20 -> the 15:40 bar on a full day, safely ahead
+    of Alpaca's ~15:45 MOC submission cutoff; 12:40 on a half-day). The order
+    rests until the closing auction (FillTiming.NEXT_CLOSE fills only on the
+    session-final bar). The regime gate uses the *prior day's* completed close,
+    so deciding 20 minutes early loses no information.
+  - MOO exit: decided on the session-close bar, fills at the next session's
+    open (NEXT_OPEN).
 """
 
 from __future__ import annotations
 
-from datetime import date, time
+from datetime import date
 from pathlib import Path
 
 import numpy as np
@@ -31,15 +40,10 @@ from core.strategy import Action, Context, FillTiming, Order
 REPO = Path(__file__).resolve().parents[2]
 
 
-def _parse_time(hhmm: str) -> time:
-    h, m = (int(x) for x in hhmm.split(":"))
-    return time(h, m)
-
-
 class OvernightLong:
     def __init__(self, params: dict):
-        self.close_decision_time = _parse_time(params.get("close_decision_time", "15:55"))
-        self.session_close_time = _parse_time(params.get("session_close_time", "16:00"))
+        # Decision bar closes this many minutes before the session close.
+        self.decision_offset = pd.Timedelta(minutes=int(params.get("decision_offset_minutes", 20)))
 
         self.use_regime_gate = bool(params.get("use_regime_gate", True))
         self.sma_window = int(params.get("sma_window", 200))
@@ -91,13 +95,15 @@ class OvernightLong:
     # --- per-bar decision ---
     def on_bar(self, ctx: Context) -> list[Order]:
         now = ctx.now_et
-        t = now.time()
-        d = now.date()
-        price = float(ctx.history["close"].iloc[-1])
+        session_close = ctx.extra.get("session_close_et")
+        if session_close is None:  # no calendar supplied: assume a full 16:00 session
+            session_close = now.normalize() + pd.Timedelta(hours=16)
 
-        # 15:55 — enter the overnight long at today's 16:00 close (MOC), if holding.
-        if t == self.close_decision_time:
+        # close - offset — enter the overnight long at today's close (MOC), if holding.
+        if now == session_close - self.decision_offset:
+            d = now.date()
             if ctx.position.is_flat and self._hold_tonight(d):
+                price = float(ctx.history["close"].iloc[-1])
                 g = self._gap_budget_frac(d) * price
                 return [
                     Order(
@@ -110,8 +116,8 @@ class OvernightLong:
                 ]
             return []
 
-        # 16:00 (last bar) — exit the overnight long at the next open (MOO).
-        if t == self.session_close_time:
+        # Session-close bar — exit the overnight long at the next open (MOO).
+        if now == session_close:
             if not ctx.position.is_flat:
                 return [Order(Action.CLOSE, fill=FillTiming.NEXT_OPEN, tag="overnight_exit")]
             return []

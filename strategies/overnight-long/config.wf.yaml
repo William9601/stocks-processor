@@ -6,8 +6,7 @@
 strategy:
   path: strategies/overnight-long
   params:
-    close_decision_time: "15:55"
-    session_close_time: "16:00"
+    decision_offset_minutes: 20   # decision bar closes 20 min before the session close (15:40 full day; Alpaca MOC cutoff ~15:45)
     use_regime_gate: true
     sma_window: 200
     overnight_vol_window: 20

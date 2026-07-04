@@ -6,8 +6,7 @@
 strategy:
   path: strategies/overnight-long
   params:
-    close_decision_time: "15:55"   # MOC entry decided here; fills at 16:00 close
-    session_close_time: "16:00"    # last bar; MOO exit decided here, fills next open
+    decision_offset_minutes: 20   # decision bar closes 20 min before the session close (15:40 full day; Alpaca MOC cutoff ~15:45)
     use_regime_gate: true          # hold only when close > 200-day SMA (LOCKED)
     sma_window: 200
     overnight_vol_window: 20        # 20-day stdev of close->open returns -> gap budget

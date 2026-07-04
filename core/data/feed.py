@@ -72,7 +72,16 @@ class DataFeed:
 
     @classmethod
     def from_source(cls, symbol: str, source: str | Path | pd.DataFrame) -> DataFeed:
-        return cls(symbol, load_bars(source))
+        """Load real vendor data: normalized AND session-filtered.
+
+        Vendor files can carry phantom bars stamped after a half-day's 13:00
+        close (built from after-hours prints); they are dropped here so no
+        downstream code can fill on them. Synthetic/test frames passed to the
+        plain constructor skip this (their dates may not be XNYS sessions).
+        """
+        from core.data.calendar import filter_to_sessions
+
+        return cls(symbol, filter_to_sessions(load_bars(source)))
 
     def between(self, start: str | None, end: str | None) -> DataFeed:
         """Restrict to a [start, end] date range (inclusive), UTC-aware."""

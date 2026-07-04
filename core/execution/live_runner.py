@@ -94,6 +94,7 @@ class LiveRunner:
             cash=cash,
             equity=equity,
         )
+        self.risk.on_bar(ctx)  # day-roll + breakers on every bar, not just order bars
         for order in self.strategy.on_bar(ctx):
             self._execute(order, ctx, ref_price=float(bars["close"].iloc[-1]))
         return True
