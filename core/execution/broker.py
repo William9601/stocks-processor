@@ -13,6 +13,12 @@ Fill discipline (matches the SPEC, avoids lookahead):
   price with adverse stop-slippage (optimistic-but-flagged intrabar assumption,
   per SPEC). Positions that cannot be stopped (e.g. an overnight hold while the
   market is closed) size off ``stop_distance`` but place no resting stop.
+- An *absolute* stop (``Order.stop_price``) rests at that exact level with
+  intrabar semantics (orb SPEC, LOCKED): the entry cancels if its fill print
+  is already at/through the level (born stopped out); a touch fills at the
+  stop price; a bar that *opens* through the level fills at that bar's open —
+  gap-throughs fill where the market is, not where we wished. The relative
+  ``stop_distance`` path keeps its original fill-at-stop-price behavior.
 - Time-exit CLOSE orders are processed at the next open *before* stops, so a
   scheduled flat always wins over a same-bar stop.
 """
@@ -66,10 +72,12 @@ class BacktestBroker:
         self._avg_price = 0.0
         self._stop_price: float | None = None
         self._stop_distance: float | None = None
+        self._stop_absolute = False  # True -> intrabar gap-through semantics
         self._pending: list[Order] = []
         self._open_fill: Fill | None = None  # entry fill of the current trade
         self.trades: list[Trade] = []
         self.fills: list[Fill] = []
+        self.cancels: list[tuple[pd.Timestamp, str]] = []  # (time, reason)
 
     # --- state exposed to the engine / risk / strategy ---
     def position(self) -> Position:
@@ -112,6 +120,16 @@ class BacktestBroker:
         than filling on a later day's close)."""
         self._pending = [o for o in self._pending if o.fill is not timing]
 
+    def expire_session_only(self, ts: pd.Timestamp) -> None:
+        """Drop unfilled DAY orders at the session roll (engine calls this so
+        a ``session_only`` order queued on one session can never fill on a
+        later day — an intraday entry stranded by a data gap dies instead of
+        becoming an overnight hold)."""
+        for order in self._pending:
+            if order.session_only:
+                self.cancels.append((ts, f"session_expiry:{order.tag or order.action.value}"))
+        self._pending = [o for o in self._pending if not o.session_only]
+
     def _fill_pending(
         self, timing: FillTiming, ref_px: float, ts: pd.Timestamp, is_close: bool
     ) -> None:
@@ -135,19 +153,45 @@ class BacktestBroker:
             elif order.action in (Action.ENTER_LONG, Action.ENTER_SHORT):
                 if self._pos_qty != 0.0:
                     continue  # one position at a time
+                if order.stop_price is not None and self._born_stopped(order, ref_px):
+                    # Entry print already at/through the absolute stop: never
+                    # enter a position that is born stopped out (orb SPEC).
+                    self.cancels.append((ts, f"born_stopped:{order.tag or 'entry'}"))
+                    continue
                 self._open(order, ref_px, ts, is_close=is_close)
         self._pending = remaining
 
+    @staticmethod
+    def _born_stopped(order: Order, ref_px: float) -> bool:
+        """Entry fill print (raw) at or through the order's absolute stop."""
+        if order.action is Action.ENTER_LONG:
+            return ref_px <= order.stop_price
+        return ref_px >= order.stop_price
+
     def check_stops(self, bar: pd.Series, ts: pd.Timestamp) -> None:
-        """Fill a resting protective stop if this bar's range crosses it."""
+        """Fill a resting protective stop if this bar's range crosses it.
+
+        A relative stop keeps the original behavior: it fills at the stop
+        price. An absolute stop (``Order.stop_price``) adds the gap-through
+        rule: a bar that *opens* through the level fills at that bar's open.
+        """
         if self._pos_qty == 0.0 or self._stop_price is None:
             return
         low, high = float(bar["low"]), float(bar["high"])
         hit = (self._pos_qty > 0 and low <= self._stop_price) or (
             self._pos_qty < 0 and high >= self._stop_price
         )
-        if hit:
-            self._close(self._stop_price, ts, is_stop=True, reason="stop")
+        if not hit:
+            return
+        ref = self._stop_price
+        if self._stop_absolute:
+            open_px = float(bar["open"])
+            gapped = (self._pos_qty > 0 and open_px < self._stop_price) or (
+                self._pos_qty < 0 and open_px > self._stop_price
+            )
+            if gapped:
+                ref = open_px
+        self._close(ref, ts, is_stop=True, reason="stop")
 
     # --- internal fill mechanics (signed cash accounting) ---
     def _open(self, order: Order, ref_px: float, ts: pd.Timestamp, is_close: bool = False) -> None:
@@ -162,8 +206,12 @@ class BacktestBroker:
         self._stop_distance = order.stop_distance
         # Only rest a protective stop when the entry asked for one. A position
         # sized off stop_distance but with resting_stop=False (an un-stoppable
-        # overnight hold) places no stop.
-        if order.stop_distance is not None and order.resting_stop:
+        # overnight hold) places no stop. An absolute stop_price rests at that
+        # exact level (never fill-relative) and takes intrabar semantics.
+        if order.stop_price is not None:
+            self._stop_price = order.stop_price
+            self._stop_absolute = True
+        elif order.stop_distance is not None and order.resting_stop:
             sign = -1 if is_buy else 1
             self._stop_price = price + sign * order.stop_distance
         fill = Fill(ts, price, qty, comm, slip, reason=order.tag or "entry")
@@ -209,4 +257,5 @@ class BacktestBroker:
         self._avg_price = 0.0
         self._stop_price = None
         self._stop_distance = None
+        self._stop_absolute = False
         self._open_fill = None

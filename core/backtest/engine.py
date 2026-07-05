@@ -75,8 +75,10 @@ class BacktestEngine:
             day = et_index[i].date()
             if prev_day is not None and day != prev_day:
                 # An MOC order that never met its session-close bar (data gap,
-                # early close) must not fill on a later day's close.
+                # early close) must not fill on a later day's close, and a DAY
+                # (session_only) order must not fill on a later day at all.
                 self.broker.expire_pending(FillTiming.NEXT_CLOSE)
+                self.broker.expire_session_only(ts)
             prev_day = day
 
             # 1-3: settle earlier decisions against this bar (open fills,

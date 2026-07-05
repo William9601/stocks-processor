@@ -56,6 +56,22 @@ class Order:
     when false, ``stop_distance`` is a *sizing basis only* and no stop is placed
     (used by positions that cannot be stopped, e.g. an overnight hold while the
     market is closed). ``fill`` selects the fill timing (see :class:`FillTiming`).
+
+    ``stop_price`` is an *absolute* protective stop level (a price the strategy
+    knew at decision time, e.g. the opening bar's extreme). When set it takes
+    precedence over the fill-relative stop and switches the stop to intrabar
+    semantics: the entry is *cancelled* if its fill print is already at or
+    through the level (a position must never be born stopped out); a later
+    touch fills at the stop price; a bar that *opens* through the level fills
+    at that bar's open, never at the stop. ``stop_distance`` is still required
+    alongside it as the sizing basis. The legacy relative-stop path is
+    untouched.
+
+    ``session_only`` marks a DAY order: if still unfilled when the session
+    rolls, it expires instead of filling on a later day (an intraday entry
+    must never become an overnight hold via a data gap). Default ``False``
+    preserves the resting-across-the-roll behavior (e.g. an MOO exit queued
+    on the closing bar) that existing strategies rely on.
     """
 
     action: Action
@@ -64,6 +80,8 @@ class Order:
     tag: str = ""
     fill: FillTiming = FillTiming.NEXT_OPEN
     resting_stop: bool = True
+    stop_price: float | None = None
+    session_only: bool = False
 
 
 class Side(Enum):
