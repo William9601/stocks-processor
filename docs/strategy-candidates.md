@@ -63,15 +63,21 @@ the queue.** Original entry kept for the record:
   source — the Alpaca-only fallback likely fails the ≥60-OOS-trade bar by construction),
   then run the pre-scoring diagnostic before any engine code.
 
-### 2. Opening range breakout (ORB), 5-min, QQQ — **SPEC'D, PREGATE PASSED 2026-07-05**
+### 2. Opening range breakout (ORB), 5-min, QQQ — **REJECTED at the OOS engine gate 2026-07-05**
 
-Outcome: spec approved and frozen (`strategies/orb/SPEC.md`, 6 baselines signed off:
-EoD-only exit, 2.0 bps cost bar, IS 2018–2022 / OOS 2023–2024 post-publication / WF
-2025→, strict Sharpe ≥ 1.0 + beat-B&H bars, 10% kill, unlevered R=0.5%). Pregate
-**passed** — the lab's first: IS mean gross +4.67 bps/trade (t=2.22) vs 2.0 bps bar,
-both sides positive, all five years positive, payoff shape as published
-(`experiments/orb/2026-07-05-pregate/`). Next: core intrabar-stop extension + engine
-backtest; the OOS bars remain a high hurdle. Original entry kept for the record:
+Outcome: spec approved and frozen (`strategies/orb/SPEC.md`, 6 baselines signed off);
+pregate **passed** — the lab's first: IS mean gross +4.67 bps/trade (t=2.22) vs the
+2.0 bps bar, all five years positive (`experiments/orb/2026-07-05-pregate/`). The
+core intrabar-stop extension was built, the engine reproduced the pregate to rounding
+(1,251/1,251 trades), and the one pre-registered OOS look (2023–2024,
+post-publication) **failed 5 of 9 frozen bars**: net Sharpe 0.153 vs ≥1.0, QQQ B&H at
+2.002 over the same window, long side net-negative, −2.03% at 1.5× costs, −81% decay
+vs IS. OOS gross (+1.90 bps/trade) fell below the cost bar on its own — the
+published-then-gone pattern, third confirmation in this lab. Quant-reviewer: no
+blockers, rejection trustworthy. Post-mortem in the SPEC; WF never read. What
+survives: the payoff-shape hypothesis was right (the level wasn't), correlation vs
+the overnight-long book 0.008, and the intrabar-stop core machinery is now validated
+infrastructure. Original entry kept for the record:
 
 ### ~~2.~~ Opening range breakout (ORB), 5-min, QQQ — the day-trading candidate
 

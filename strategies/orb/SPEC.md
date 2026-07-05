@@ -1,13 +1,15 @@
 # Strategy: orb
 
-- **Status**: approved — user signed off all 6 open baselines 2026-07-05 (see Decisions
-  record at the bottom); success criteria FROZEN as of that sign-off, before the
-  pregate ran. **PREGATE PASSED 2026-07-05** (first pass in the lab): IS 2018–2022
-  mean gross +4.67 bps/trade (n=1,251, t=2.22) vs the locked 2.0 bps cost bar and the
-  +1.19 bps unconditional drift; both sides positive, every year positive, payoff
-  shape as hypothesized (24% hit rate, EoD winners +102 bps). OOS/WF unread. Next:
-  core intrabar-stop extension, then engine backtest. Results:
-  `experiments/orb/2026-07-05-pregate/`.
+- **Status**: **REJECTED at the OOS engine gate, 2026-07-05** — the one
+  pre-registered OOS look (2023–2024, post-publication) failed 5 of 9 frozen bars;
+  quant-reviewer confirmed the rejection trustworthy (no blockers). Full post-mortem
+  at the bottom of this file; runs in `experiments/orb/2026-07-05-1639-oos*`. WF
+  (2025→) was never read. History: spec approved and criteria frozen 2026-07-05;
+  **PREGATE PASSED same day** (first pass in the lab): IS 2018–2022 mean gross
+  +4.67 bps/trade (n=1,251, t=2.22) vs the locked 2.0 bps cost bar and the +1.19 bps
+  unconditional drift (`experiments/orb/2026-07-05-pregate/`); core intrabar-stop
+  extension built; engine IS run reproduced the pregate to rounding (1,251/1,251
+  trades, 4.667 vs 4.668 bps).
 - **Created**: 2026-07-05
 - **One-liner**: 5-minute opening range breakout on QQQ (Zarattini & Aziz 2023) — trade in the direction of the first 5-minute bar from the open of the second bar, stop at the opening bar's opposite extreme, flat by the close; both directions; pregate on gross follow-through before any core intraday-stop machinery is built.
 
@@ -402,3 +404,70 @@ now immovable:
 6. **Sizing — CONFIRMED: R = 0.5% of equity, stop-distance sized, no leverage,
    notional capped at 100% of equity**, realized-R truncation accepted and reported;
    leverage will not be introduced later to rescue a thin pass.
+
+## Post-mortem — REJECTED 2026-07-05 (OOS engine gate)
+
+The pipeline ran exactly as pre-registered: pregate PASS → core intrabar-stop
+extension (additive, legacy paths pinned byte-identical) → engine IS cross-check
+(1,251/1,251 trades, +4.667 vs +4.668 gross bps/trade vs the independent pregate
+implementation) → **one** OOS look plus the pre-registered 1.5×-cost companion →
+quant-reviewer gate (no blockers).
+
+### The frozen bars, as measured (OOS 2023-01-03 → 2024-12-30, 499 trades)
+
+| locked bar | value | verdict |
+|---|---|---|
+| net zero-filled Sharpe ≥ 1.0 | **0.153** | FAIL |
+| beat QQQ B&H net Sharpe, identical window | 0.153 vs **2.002** (QQQ +97.5%) | FAIL |
+| net-positive expectancy after costs | +0.43 bps/trade | pass (marginal) |
+| net-positive at 1.5× costs | **−2.03%**, Sharpe −0.069 | FAIL |
+| both sides net-positive separately | long **−$1,488**, short +$3,062 | FAIL |
+| max OOS drawdown ≤ 10% | −9.04% (MTM per-bar −9.30%) | pass |
+| worst trade ≤ 2.0·R realized | −1.45 R | pass |
+| ≥ 400 filled OOS trades | 499 | pass |
+| decay guard: OOS Sharpe ≥ 50% of IS (0.789) | 0.153 (**−81%**) | FAIL |
+
+### What actually happened
+
+- **The published-then-gone pattern, third confirmation in this lab.** IS gross
+  +4.67 bps/trade (every year positive) decayed to **+1.90 bps gross** in the
+  post-publication window — below the 2.0 bps cost bar on its own: the pregate
+  gate itself, applied to 2023–2024, would have failed. 2023 was net-negative
+  (−2.17 bps/trade); 2024 recovered to +3.02 — a diagnostic observation, not a
+  gate, and one year is noise at these t-stats.
+- **The long side inverted** (−5.6 bps net/trade) inside a +97.5% QQQ window —
+  anti-beta, which is what makes an execution-artifact explanation impossible and
+  the Adversarial-note prediction (post-publication crowding, regime dependence of
+  the 2016–2023 sample) the standing explanation.
+- The mechanism section's honest weakness — "it does not explain why so simple and
+  so public a signal … would remain unarbitraged after an April 2023 paper" — is
+  the epitaph. The OOS window was placed post-publication precisely to test this;
+  it answered.
+
+### Kept honest / worth keeping
+
+- The **payoff-shape hypothesis was right** (hit rate 21.6%, stops ~75%, P&L
+  carried by EoD trend-day winners) — the *shape* survived; the *level* didn't.
+- Correlation vs the overnight-long paper book over identical dates: **0.008** —
+  the time-of-day-complementarity claim was correct.
+- The **core intrabar-stop extension and session-only expiry survive** as
+  validated infrastructure (7 core tests + 13 strategy tests), plus
+  `RiskLimits.halt_on_drawdown`: the first IS attempt exposed that a latched −10%
+  halt mid-simulation censors the very drawdown the ≤10% criterion judges (453
+  trades silently dropped); backtests now measure the full window, paper/live
+  behavior unchanged.
+- Reviewer follow-ups for the *next* intraday strategy (none affect this verdict):
+  export `risk.halted` + per-bar MTM drawdown in metrics.json; record data file
+  hashes per run (house rule 5); note that an EoD CLOSE resting across a
+  data-gap roll fills at the next day's first open (earliest possible exit —
+  acceptable, but the never-overnight contract should be stated as "flat at the
+  earliest print the data allows").
+
+### Ruling
+
+Rejected under the locked criteria; per the Adversarial notes there are **no
+rescue runs** — no other durations, no other instruments, no leverage, no
+cost-model softening. WF 2025→ stays unread forever. The strategy joins
+rsi-5050, spx-swing, intraday-momentum, and overnight-drift(-SPY) in the
+institutional-memory shelf; `overnight-long` remains the lab's only live paper
+book.
