@@ -303,6 +303,43 @@ def test_risk_state_survives_process_restart(tmp_path):
     ) is not None
 
 
+class DelayedPrintBroker(FakeAuctionBroker):
+    """Prints become queryable only from a given wall-clock time — models the
+    daily bar landing (entitled keys) or the SIP recency clamp (free keys)."""
+
+    def __init__(self, bars, clock, ready_et):
+        super().__init__(bars)
+        self._clock = clock
+        self._ready = pd.Timestamp(ready_et, tz="America/New_York").tz_convert("UTC")
+
+    def auction_prints(self, symbol, day):
+        if self._clock.now() < self._ready:
+            return None, None
+        return super().auction_prints(symbol, day)
+
+
+def test_official_print_fast_retries_for_entitled_keys(tmp_path):
+    """With a real-time SIP entitlement the print is queryable minutes after
+    the auction — the fast attempts must pick it up promptly, not after a
+    free-tier-sized wait."""
+    clock = FakeClock("2024-06-03 16:01")
+    broker = DelayedPrintBroker(_day_bars(), clock, "2024-06-03 16:05")
+    runner = _wire(_runner(tmp_path, broker), clock)
+
+    assert runner._official_print(SESSION, is_open=False) == 501.00
+    assert clock.now() <= _et("16:07")
+
+
+def test_official_print_slow_tail_covers_free_tier_delay(tmp_path):
+    """Free-tier keys cannot see the print until it is >15 min old (plus the
+    broker's clamp margin) — the schedule's slow tail must still reach it."""
+    clock = FakeClock("2024-06-03 16:01")
+    broker = DelayedPrintBroker(_day_bars(), clock, "2024-06-03 16:22")
+    runner = _wire(_runner(tmp_path, broker), clock)
+
+    assert runner._official_print(SESSION, is_open=False) == 501.00
+
+
 def test_missing_official_print_logs_none_not_crash(tmp_path):
     broker = FakeAuctionBroker(_day_bars())
     runner = _runner(tmp_path, broker)

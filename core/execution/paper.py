@@ -38,6 +38,7 @@ class AlpacaPaperBroker:
         self._trading = TradingClient(api_key, secret_key, paper=True)
         self._data = StockHistoricalDataClient(api_key, secret_key)
         self._feed = DataFeed.SIP if feed.lower() == "sip" else DataFeed.IEX
+        self._sip_realtime: bool | None = None  # probed lazily, see _has_realtime_sip
 
     # --- data ---
     def recent_bars(self, symbol: str, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
@@ -90,15 +91,34 @@ class AlpacaPaperBroker:
         )
         return str(order.id)
 
+    def _has_realtime_sip(self, symbol: str) -> bool:
+        """Whether this key may query SIP data from the last ~15 minutes
+        (Algo Trader Plus). Probed once with a latest-trade request and
+        cached; a failed probe degrades to the free-tier recency clamp in
+        auction_prints (slower but correct), never to an error."""
+        if self._sip_realtime is None:
+            from alpaca.data.enums import DataFeed
+            from alpaca.data.requests import StockLatestTradeRequest
+
+            try:
+                self._data.get_stock_latest_trade(
+                    StockLatestTradeRequest(symbol_or_symbols=symbol, feed=DataFeed.SIP)
+                )
+                self._sip_realtime = True
+            except Exception:
+                self._sip_realtime = False
+        return self._sip_realtime
+
     def auction_prints(self, symbol: str, day) -> tuple[float | None, float | None]:
         """(official open, official close) of ``day``'s daily bar — the
         auction prints the paper fill log measures slippage against.
 
         Always fetched from SIP (an IEX daily bar is not the consolidated
-        official print), independent of the bar feed. Free-tier compatible:
-        keys without a real-time SIP entitlement cannot query the most recent
-        ~15 minutes, so the request end is clamped to now-16min. Right after
-        an auction this returns (None, None) until the print is old enough —
+        official print), independent of the bar feed. Recency handling is
+        entitlement-aware: keys without real-time SIP cannot query the most
+        recent ~15 minutes, so for them the request end is clamped to
+        now-16min; entitled keys query right up to now. Right after an
+        auction this returns (None, None) until the print is old enough —
         callers retry (see OvernightAuctionRunner._official_print)."""
         from alpaca.data.enums import DataFeed
         from alpaca.data.requests import StockBarsRequest
@@ -108,10 +128,11 @@ class AlpacaPaperBroker:
 
         start = pd.Timestamp(day).tz_localize("America/New_York").tz_convert("UTC")
         end = start + pd.Timedelta(days=1)
-        recency_cut = pd.Timestamp.now(tz="UTC") - pd.Timedelta(minutes=16)
-        end = min(end, recency_cut)
-        if end <= start:
-            return None, None
+        now = pd.Timestamp.now(tz="UTC")
+        if not self._has_realtime_sip(symbol):
+            end = min(end, now - pd.Timedelta(minutes=16))
+            if end <= start:
+                return None, None
         req = StockBarsRequest(
             symbol_or_symbols=symbol,
             timeframe=TimeFrame.Day,
@@ -128,13 +149,16 @@ class AlpacaPaperBroker:
             row = df.iloc[0]
         except Exception:
             return None, None
-        # A clamped (partial-day) bar has a valid OPEN once the opening print
-        # is inside the window, but its CLOSE is just the latest trade — only
-        # report each print if the window extends safely past it.
+        # Partial-day guard (correct on ANY feed): the bar has a valid OPEN
+        # once the opening print is inside the data window, but its CLOSE is
+        # just the latest trade — only report each print once the data can
+        # extend safely past it. The window ends at the request end on the
+        # clamped free-tier path and at wall-clock now on the entitled path.
         lag = pd.Timedelta(minutes=5)
+        window_end = min(end, now)
         open_et, close_et = session_open_et(day), session_close_et(day)
-        open_px = float(row["open"]) if open_et is None or end >= open_et + lag else None
-        close_px = float(row["close"]) if close_et is None or end >= close_et + lag else None
+        open_px = float(row["open"]) if open_et is None or window_end >= open_et + lag else None
+        close_px = float(row["close"]) if close_et is None or window_end >= close_et + lag else None
         return open_px, close_px
 
     def wait_fill(self, order_id: str, timeout: float = 30.0) -> float:

@@ -95,9 +95,13 @@ def main() -> None:
 
     cfg = yaml.safe_load(args.config.read_text())
     symbol = cfg["instrument"]["symbol"]
-    feed = os.environ.get("ALPACA_DATA_FEED", "iex")
-    if feed.lower() != "sip":
-        print("WARNING: using IEX data (thin). Set ALPACA_DATA_FEED=sip for real signals.")
+    # The committed per-strategy config wins over the env var, so a stale
+    # ALPACA_DATA_FEED in .env cannot silently change the measured feed.
+    feed = str(cfg.get("execution", {}).get("feed")
+               or os.environ.get("ALPACA_DATA_FEED", "iex")).lower()
+    if feed != "sip":
+        print("WARNING: using IEX data (thin). Set execution.feed: sip in the config "
+              "(needs a real-time SIP entitlement) for full-market bars.")
 
     confirm_paper(symbol, args.yes)
 
@@ -107,14 +111,16 @@ def main() -> None:
 
     execution = cfg.get("execution", {})
     if execution.get("mode") == "overnight_auction":
-        # Feed policy (free-tier compatible): the decision bars may be IEX
-        # real-time — the gate uses the PRIOR day's close, so the 15:40 bar
-        # only timestamps the decision and prices the sizing (bps-level
-        # accuracy is irrelevant there). The fill-log reference prints are
-        # ALWAYS official SIP history (broker.auction_prints), fetched once
-        # they are >15 minutes old, which free keys are permitted to query.
+        # Feed policy: decision bars read the configured feed (SIP with a
+        # real-time entitlement; IEX remains a valid free-tier fallback — the
+        # gate uses the PRIOR day's close, so the 15:40 bar only timestamps
+        # the decision and prices the sizing). The fill-log reference prints
+        # are ALWAYS official SIP history (broker.auction_prints): entitled
+        # keys fetch them minutes after the auction, free-tier keys once the
+        # print is >15 minutes old (the broker detects this per key).
         print(f"[paper] decision bars on {feed.upper()} real-time; official auction "
-              "prints from SIP history (~16-20 min delayed on free-tier keys).")
+              "prints from SIP history (minutes after the auction with a real-time "
+              "SIP entitlement; ~16-20 min delayed on free-tier keys).")
         check_daily_source_fresh(cfg)
         fill_log = REPO / execution["fill_log"]
         # Risk-breaker state must survive the one-process-per-cycle lifetime,
