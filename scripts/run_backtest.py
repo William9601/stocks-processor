@@ -102,6 +102,27 @@ def write_experiment(cfg: dict, args, result, synthetic: bool) -> None:
     }
     (out / "config.yaml").write_text(yaml.safe_dump(provenance, sort_keys=False))
     (out / "metrics.json").write_text(json.dumps(result.metrics, indent=2, default=str))
+    if result.trades:
+        # Per-trade record: the SPEC-level reporting (realized-R distribution,
+        # exit-type split, worst trade) is only reproducible from trades.
+        import pandas as pd
+
+        pd.DataFrame(
+            [
+                {
+                    "entry_time": t.entry_time,
+                    "exit_time": t.exit_time,
+                    "side": t.side.name,
+                    "qty": t.qty,
+                    "entry_price": t.entry_price,
+                    "exit_price": t.exit_price,
+                    "costs": t.costs,
+                    "net_pnl": t.net_pnl,
+                    "exit_reason": t.exit_reason,
+                }
+                for t in result.trades
+            ]
+        ).to_csv(out / "trades.csv", index=False)
     (out / "notes.md").write_text(
         f"# {strat_name} — {tag}\n\n"
         f"- sample: {args.sample}\n- synthetic data: {synthetic}\n"

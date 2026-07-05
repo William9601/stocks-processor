@@ -1,0 +1,34 @@
+# orb — locked run configuration. Every value below is pre-registered in
+# SPEC.md (Decisions record, user sign-off 2026-07-05) and immovable.
+
+strategy:
+  path: strategies/orb
+  params: {}                # fully pre-registered; build() rejects any params
+
+instrument:
+  symbol: QQQ               # LOCKED: single instrument, no fallback
+  bar_minutes: 5
+
+risk:
+  risk_per_trade: 0.005     # R = 0.5% of equity, stop-distance sized
+  daily_loss_limit_r: 2.0   # house backstop (binds only on gap-through overshoot)
+  max_drawdown: 0.10        # kill switch, tighter than house 15% (SPEC sign-off #5)
+  point_value: 1.0
+  allow_leverage: false     # notional capped at 100% of equity, never renegotiated
+
+costs:                      # QQQ-specific model (SPEC Cost assumptions)
+  commission_per_unit: 0.0  # Alpaca
+  half_spread_bps: 0.1
+  slippage_bps: 0.4         # market fills: 09:35 entry, EoD exit
+  stop_slippage_bps: 1.0    # stops fill on adverse momentum by construction
+
+backtest:
+  starting_cash: 100000.0
+  in_sample:      { start: "2018-01-01", end: "2022-12-31" }
+  out_of_sample:  { start: "2023-01-01", end: "2024-12-31" }   # post-publication
+  walk_forward:   { start: "2025-01-01", end: null }           # UNREAD until OOS verdict
+
+data:
+  source: data/QQQ_5m_adj.parquet   # Alpaca SIP 5-min RTH, close-stamped
+  provider: alpaca-sip
+  adjustment: all           # dividend bugs immaterial by construction (SPEC Data)
