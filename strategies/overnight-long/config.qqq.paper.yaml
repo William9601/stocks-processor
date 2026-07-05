@@ -39,6 +39,7 @@ costs:                      # REFERENCE ONLY — paper fills are measured, not m
 
 execution:
   mode: overnight_auction   # MOC entry / MOO exit via OvernightAuctionRunner
+  feed: sip                 # decision-bar feed — Algo Trader Plus (real-time SIP) since 2026-07-05; overrides ALPACA_DATA_FEED
   fill_log: experiments/overnight-long/paper-fills.QQQ.jsonl  # append-only; THE paper measurement
   risk_state: experiments/overnight-long/paper-risk-state.QQQ.json  # 2R lock + kill switch survive restarts
   poll_seconds: 30

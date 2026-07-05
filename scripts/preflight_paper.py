@@ -1,8 +1,9 @@
 """Read-only preflight for the overnight paper path — places NO orders.
 
 Run any time (market open or closed) to verify everything Monday's session
-needs: credentials, paper account access, SIP data entitlement, order-type
-enums, the exchange calendar, daily-gate freshness, and log paths.
+needs: credentials, paper account access, real-time entitlement on the
+configured bar feed, order-type enums, the exchange calendar, daily-gate
+freshness, and log paths.
 
     uv run --extra paper python scripts/preflight_paper.py \
         strategies/overnight-long/config.qqq.paper.yaml
@@ -61,8 +62,10 @@ def main() -> None:
     load_dotenv(REPO / ".env")
     key, secret = os.environ.get("ALPACA_API_KEY"), os.environ.get("ALPACA_SECRET_KEY")
     check("ALPACA_API_KEY / ALPACA_SECRET_KEY present", bool(key and secret))
-    feed = os.environ.get("ALPACA_DATA_FEED", "iex")
-    check("bar feed configured", feed.lower() in ("iex", "sip"),
+    # Same resolution as run_paper.py: the committed config wins over the env var.
+    feed = str(cfg.get("execution", {}).get("feed")
+               or os.environ.get("ALPACA_DATA_FEED", "iex")).lower()
+    check("bar feed configured", feed in ("iex", "sip"),
           f"feed={feed} (decision bars; official prints always come from SIP history)")
     if not (key and secret):
         _summary()

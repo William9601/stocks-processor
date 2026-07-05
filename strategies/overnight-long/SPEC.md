@@ -461,13 +461,19 @@ verdict cannot be relitigated after the fills arrive.
   2·R daily lock and 15% drawdown kill switch enforced with state **persisted across
   the one-process-per-cycle lifetime** (`paper-risk-state.QQQ.json`); stale daily-gate
   data refuses to trade.
-- **Data-feed policy (free-tier key, amended 2026-07-04 after preflight):** the
-  account key has no real-time SIP entitlement, so the 15:40 **decision bar reads IEX
-  real-time** — harmless, because the gate uses the *prior day's* completed close and
-  the bar only timestamps the decision and prices the sizing. The **fill-log
-  reference prints are always official SIP history**, fetched once >15 minutes old
-  (free keys may query non-recent SIP), with a partial-day guard so a mid-day daily
-  bar can never masquerade as the official close. `scripts/preflight_paper.py` is the
+- **Data-feed policy (amended 2026-07-05 — Algo Trader Plus):** the account key now
+  carries a **real-time SIP entitlement** (subscribed 2026-07-05), so the 15:40
+  **decision bar reads SIP real-time** (`execution.feed: sip` in the paper config,
+  which takes precedence over `ALPACA_DATA_FEED`). The **fill-log reference prints
+  are always official SIP history**; with the entitlement they are fetched minutes
+  after the auction. The 2026-07-04 free-tier path (decision bars on IEX; prints
+  clamped to >15-minutes-old SIP with slow retries) **remains as an automatic
+  per-key fallback** — detected by a runtime entitlement probe, never a hard SIP
+  requirement — and the partial-day guard (a mid-day daily bar can never masquerade
+  as the official close) applies on any feed. Feed provenance for the fill
+  analysis: no fills were logged under the free-tier policy; the switch to SIP
+  decision bars predates session 1 (2026-07-06) if merged before it — the exact
+  cutover is recorded in the experiment notes. `scripts/preflight_paper.py` is the
   read-only go/no-go check before any session.
 
 ## Known failure modes

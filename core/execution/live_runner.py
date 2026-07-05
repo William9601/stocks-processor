@@ -195,6 +195,11 @@ class OvernightAuctionRunner:
 
     MOC_CUTOFF_MIN = 15  # stop trying to enter this many minutes before close
     OPG_SUBMIT_MIN = 15  # submit the MOO exit this many minutes before open
+    # Official-print retry cadence: fast attempts first (with a real-time SIP
+    # entitlement the consolidated print is queryable minutes after the
+    # auction), then a slow tail spanning the free-tier ~15-min SIP recency
+    # clamp (see AlpacaPaperBroker.auction_prints) — ~25 min total.
+    PRINT_RETRY_S = [30.0] * 10 + [120.0] * 10
 
     def __init__(
         self,
@@ -264,18 +269,20 @@ class OvernightAuctionRunner:
             fh.write(json.dumps(entry) + "\n")
         self.on_event(f"LOGGED {order_type} fill: {entry}")
 
-    def _official_print(self, session_date, is_open: bool, retries: int = 12) -> float | None:
-        """Official auction print for the day, retried while it becomes
-        queryable. Two delays stack: the consolidated print takes a minute or
-        two to land in the daily bar, and free-tier keys cannot query SIP data
-        newer than ~15 minutes (the broker clamps for this) — so the retry
-        window spans ~24 minutes. Paid SIP keys succeed on an early attempt."""
-        for _ in range(retries):
+    def _official_print(self, session_date, is_open: bool) -> float | None:
+        """Official auction print for the day, retried on PRINT_RETRY_S while
+        it becomes queryable. The print takes a minute or two to land in the
+        daily bar; keys with a real-time SIP entitlement then see it on an
+        early fast attempt, while free-tier keys (which cannot query SIP data
+        newer than ~15 minutes — the broker clamps for this) are covered by
+        the slow tail of the schedule."""
+        for delay in [*self.PRINT_RETRY_S, None]:
             open_px, close_px = self.broker.auction_prints(self.symbol, session_date)
             px = open_px if is_open else close_px
             if px:
                 return px
-            self._sleep(120)
+            if delay is not None:
+                self._sleep(delay)
         return None
 
     def _await_fill(self, order_id: str, timeout: float) -> float | None:

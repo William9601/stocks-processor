@@ -104,3 +104,18 @@ Independent quant-reviewer pass over commits `6d4c718` + `4f5f2ef`:
   bar can never report a mid-session price as the official close. Preflight also
   found the paper account at $10k (not the assumed $100k); user resets it to
   $100k in the Alpaca dashboard before Monday.
+- **Amendment (2026-07-05, feed upgrade):** the user subscribed to Alpaca **Algo
+  Trader Plus** (real-time SIP entitlement) on 2026-07-05, and the paper path was
+  upgraded the same day (branch `sip-feed-upgrade`): decision bars now read **SIP**
+  (`execution.feed: sip` in the paper config), and official auction prints are
+  fetched **minutes after the auction** via a runtime entitlement probe — the
+  free-tier handling (now-16min SIP clamp + slow retries) stays as an automatic
+  fallback, and the partial-day close guard is kept on all feeds. **Provenance
+  note for the week-1 fill analysis:** switching feeds between sessions is a small
+  measurement change — fills logged before/after differ in decision-bar feed and
+  print-fetch latency, though the official reference prints are SIP daily bars on
+  both paths and paper fills come from the same Alpaca simulator regardless. As of
+  this writing **no fills have been logged on either policy**; the first paper
+  session is 2026-07-06 and the user decides whether the upgrade merges before it
+  (whole log on SIP policy) or after session 1 (session 1 on the 2026-07-04
+  free-tier policy — annotate here if so).
