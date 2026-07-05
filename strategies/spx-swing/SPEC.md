@@ -1,6 +1,15 @@
 # Strategy: spx-swing
 
-- **Status**: draft
+- **Status**: retired — **REJECTED at spec validation 2026-07-05** by the
+  pre-registered pre-scoring gate, hours after approval and criteria freeze. OOS
+  2018–2024 (n=60): mean net +5.5 bps/trade (t=0.21) and **−14.6 bps edge vs the
+  unconditional same-horizon SPY drift** — the conditional rebound premium is gone;
+  post-2018 the pullback entry earns less than simply holding SPY over the same days.
+  IS 2005–2017 confirmed the effect existed historically (+44.5 bps net, t=3.03), so
+  this is decay, not mis-specification; the limit-entry diagnostic variant shows the
+  same OOS absence, so it is not entry mechanics. Rejected without tuning per the
+  adversarial note; no engine code written; WF window unread. Full results:
+  `experiments/spx-swing/2026-07-05-pregate/`.
 - **Created**: 2026-07-04
 - **One-liner**: Multi-day swing trades on the S&P 500 (traded via SPY), holding roughly 2–10 sessions — long-only short-term mean reversion: buy a 2-day-oversold pullback while the index is above its 200-day SMA, exit on strength or a time stop, all decisions on daily bars after the close, all fills at the next opening auction.
 
@@ -203,8 +212,8 @@ Costs are mandatory (house rule 3), modeled in `core/backtest/costs.py`, configu
 
 ## Success criteria (locked before first backtest)
 
-Applied to SPY only; **pending final user sign-off, then frozen** — no adjustment after
-results exist.
+Applied to SPY only; **user signed off 2026-07-05 — FROZEN** — no adjustment now that
+results may exist.
 
 - **Pre-scoring decomposition diagnostic (run FIRST, outside the engine):** on daily
   bars, compute the mean net forward return of the exact entry condition
@@ -281,20 +290,46 @@ Regimes where this should lose, and what limits the damage:
   overnight-long paper path, but must be re-verified for evening-queued orders before
   any paper phase.
 
-## Baselines pending user sign-off (do not block bar-setting)
+## Decisions record — user sign-off 2026-07-05 (criteria frozen from here)
 
 The LOCKED design (SPY only / long only / RSI2 ≤ 10 entry above 200-SMA / RSI2 ≥ 65,
 3·ATR daily-close stop, 10-session time stop / next-open OPG fills / no parameter
-sweeps) is fixed. The following baselines carry a stated rationale and can be vetoed
-before criteria freeze:
+sweeps) is fixed. All five pending baselines were signed off before any diagnostic ran:
 
-1. **Sizing:** `R = 0.5%` per trade, stop-distance sizing, no leverage.
-2. **Kill switch:** 12% (vs house 15%) given ~20–25% market exposure.
-3. **Windows:** IS 2005–2017 / OOS 2018–2024 / WF 2025→ — **requires approving a
-   supplementary pre-2016 EOD data source with a splice cross-check.**
-4. **Entry execution:** next-open OPG baseline. A pre-registered *diagnostic* variant —
+1. **Sizing — CONFIRMED:** `R = 0.5%` per trade, stop-distance sizing, no leverage.
+2. **Kill switch — CONFIRMED:** 12% (vs house 15%) given ~20–25% market exposure.
+3. **Windows — APPROVED with second source:** IS 2005–2017 / OOS 2018–2024 /
+   WF 2025→. Supplementary free EOD source (Stooq) approved for pre-2016 SPY daily
+   bars, spliced with the mandatory cross-check (adjusted-close divergence < 5 bps on
+   the 2016–2017 overlap; daily-return divergence reported alongside, since level
+   comparisons are sensitive to the vendors' adjustment anchor dates).
+4. **Entry execution — next-open OPG baseline; diagnostic variant DECLARED:**
    limit-buy at `C(d)` working day *d+1* (fill iff `L(d+1) ≤ C(d)`, at
-   `min(O(d+1), C(d))`) — could be declared now or dropped; it is NOT the scored
-   baseline either way.
-5. **Shorting:** excluded entirely (no short-side mean reversion below the 200-SMA).
-   Confirm this matches account intent.
+   `min(O(d+1), C(d))`) is pre-registered as a *diagnostic-only* column in the
+   pre-scoring output. It is never the scored baseline and never the verdict number.
+5. **Shorting — CONFIRMED excluded** (no short-side mean reversion below the 200-SMA).
+
+**Data-check deviation — user-approved 2026-07-05 (before the pregate ran):** the
+locked splice cross-check ran into two findings. (a) Alpaca's `adjustment=all` SPY
+series is **missing the 2016-03-18 and 2018-06-15 dividends** (audit: implied
+adjustment step vs CRSP-standard step per ex-date; the second event sits inside the
+OOS window), so the vendor adjusted series was abandoned entirely — the spliced series
+is built from **raw official prints (Yahoo pre-2016, Alpaca SIP 2016→) with a uniform
+CRSP back-adjustment** from the dividend record, which Alpaca's own factors corroborate
+to <0.5 bps on all 40 events it did apply. (b) Against Yahoo's adjusted series the
+5 bps level check reads mean 0.89 / p99 4.7 (pass) but **max 10.8 bps on 3 days where
+Yahoo's raw prints disagree with the SIP closes our series uses** — user accepted the
+splice with this deviation recorded. Stooq (the spec's example vendor) is behind an
+anti-bot wall; Yahoo used per the "or similar" sign-off. Known residual caveat: the
+2002–2015 segment carries Yahoo print quality (crisis-day prints can be off — Yahoo vs
+SIP divergence reached 279 bps on 2020-03-12 where both exist); the OOS and WF windows
+contain zero Yahoo data. Full evidence:
+`experiments/spx-swing/2026-07-05-pregate/splice_report.json`.
+
+**Pre-scoring gate operationalization (fixed before the diagnostic ran):** per the
+Success criteria, the diagnostic computes, IS and OOS separately, (a) the mean net
+return per trade of the exact rules (entry next open, exits per spec, minus the locked
+8 bps round trip) and (b) the same-horizon unconditional open→open drift baseline.
+**Reject at spec-validation if, in the OOS window, the mean net return per trade is
+≤ 0, or the net edge over the unconditional same-horizon baseline is ≤ 0.** The t-stat
+is reported for honesty about "~0" but the sign rule above is the binding gate.

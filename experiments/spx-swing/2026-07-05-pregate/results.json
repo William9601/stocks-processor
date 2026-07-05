@@ -1,0 +1,140 @@
+{
+  "strategy": "spx-swing",
+  "bars_file": "/Users/williamvonarend/projects/stockProcessor/data/SPY_daily_adj_spliced.parquet",
+  "bars_range": [
+    "2002-09-03",
+    "2026-07-02"
+  ],
+  "windows": {
+    "is": [
+      "2005-01-01",
+      "2017-12-31"
+    ],
+    "oos": [
+      "2018-01-01",
+      "2024-12-31"
+    ],
+    "wf": "2025-01-01 -> (NOT READ)"
+  },
+  "params": {
+    "rsi_entry": 10.0,
+    "rsi_exit": 65.0,
+    "sma_n": 200,
+    "atr_n": 14,
+    "stop_atr": 3.0,
+    "max_hold_closes": 9,
+    "warmup": 250,
+    "cost_round_trip_bps": 8.0
+  },
+  "gate": "OOS (scored 'open' entry): mean_net_bps > 0 AND mean_edge_vs_uncond_bps > 0",
+  "scored_open_entry": {
+    "is": {
+      "n": 103,
+      "trades_per_year": 7.9,
+      "hit_rate_net": 0.699,
+      "mean_gross_bps": 52.46,
+      "mean_net_bps": 44.46,
+      "median_net_bps": 51.51,
+      "t_net": 3.03,
+      "mean_hold_days": 3.67,
+      "uncond_baseline_bps_same_horizon": 14.27,
+      "mean_edge_vs_uncond_bps": 30.19,
+      "t_edge": 2.03,
+      "worst_trade_net_bps": -408.61,
+      "best_trade_net_bps": 387.67,
+      "by_exit": {
+        "stop": {
+          "n": 8,
+          "mean_net_bps": -322.15
+        },
+        "strength": {
+          "n": 95,
+          "mean_net_bps": 75.33
+        }
+      },
+      "uncond_daily_oo_bps": 3.889
+    },
+    "oos": {
+      "n": 60,
+      "trades_per_year": 8.6,
+      "hit_rate_net": 0.65,
+      "mean_gross_bps": 13.45,
+      "mean_net_bps": 5.45,
+      "median_net_bps": 65.42,
+      "t_net": 0.21,
+      "mean_hold_days": 3.45,
+      "uncond_baseline_bps_same_horizon": 20.01,
+      "mean_edge_vs_uncond_bps": -14.56,
+      "t_edge": -0.56,
+      "worst_trade_net_bps": -577.71,
+      "best_trade_net_bps": 418.72,
+      "by_exit": {
+        "stop": {
+          "n": 9,
+          "mean_net_bps": -388.22
+        },
+        "strength": {
+          "n": 51,
+          "mean_net_bps": 74.92
+        }
+      },
+      "uncond_daily_oo_bps": 5.799
+    }
+  },
+  "diagnostic_limit_entry_NOT_SCORED": {
+    "is": {
+      "n": 77,
+      "trades_per_year": 5.9,
+      "hit_rate_net": 0.74,
+      "mean_gross_bps": 72.88,
+      "mean_net_bps": 64.88,
+      "median_net_bps": 85.74,
+      "t_net": 3.53,
+      "mean_hold_days": 3.99,
+      "uncond_baseline_bps_same_horizon": 15.51,
+      "mean_edge_vs_uncond_bps": 49.38,
+      "t_edge": 2.64,
+      "worst_trade_net_bps": -386.25,
+      "best_trade_net_bps": 406.33,
+      "by_exit": {
+        "stop": {
+          "n": 6,
+          "mean_net_bps": -322.28
+        },
+        "strength": {
+          "n": 71,
+          "mean_net_bps": 97.6
+        }
+      },
+      "uncond_daily_oo_bps": 3.889
+    },
+    "oos": {
+      "n": 41,
+      "trades_per_year": 5.9,
+      "hit_rate_net": 0.683,
+      "mean_gross_bps": 20.64,
+      "mean_net_bps": 12.64,
+      "median_net_bps": 65.67,
+      "t_net": 0.36,
+      "mean_hold_days": 3.85,
+      "uncond_baseline_bps_same_horizon": 22.35,
+      "mean_edge_vs_uncond_bps": -9.7,
+      "t_edge": -0.27,
+      "worst_trade_net_bps": -502.06,
+      "best_trade_net_bps": 436.98,
+      "by_exit": {
+        "stop": {
+          "n": 8,
+          "mean_net_bps": -368.84
+        },
+        "strength": {
+          "n": 33,
+          "mean_net_bps": 105.13
+        }
+      },
+      "uncond_daily_oo_bps": 5.799
+    }
+  },
+  "verdict": "REJECT at spec-validation \u2014 OOS conditional edge is ~0/negative net of costs (binding rule frozen in SPEC.md Decisions record); nothing to tune toward",
+  "git_commit": "ccab57da06099d7d7661110f2b762f6092058324"
+}

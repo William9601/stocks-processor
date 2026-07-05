@@ -1,0 +1,86 @@
+{
+  "method": "raw prints (Yahoo < 2016-01-04, Alpaca SIP after) + uniform CRSP back-adjustment from the Yahoo dividend record; vendor adjusted series NOT used",
+  "alpaca_files": [
+    "/Users/williamvonarend/projects/stockProcessor/data/SPY_daily_adj_full.parquet",
+    "/Users/williamvonarend/projects/stockProcessor/data/SPY_daily_raw_full.parquet"
+  ],
+  "yahoo_cache": "/Users/williamvonarend/projects/stockProcessor/data/SPY_yahoo_daily_raw.parquet",
+  "spliced_file": "/Users/williamvonarend/projects/stockProcessor/data/SPY_daily_adj_spliced.parquet",
+  "splice_date": "2016-01-04",
+  "spliced_range": [
+    "2002-09-03",
+    "2026-07-02"
+  ],
+  "spliced_sessions": 5996,
+  "dividend_events_applied": 97,
+  "alpaca_vendor_adjustment_audit": {
+    "events_checked": 42,
+    "bad_events": [
+      {
+        "ex_date": "2016-03-18",
+        "dividend": 1.05,
+        "vendor_step_bps": 0.16,
+        "crsp_step_bps": 51.58,
+        "diff_bps": -51.42,
+        "bad": true
+      },
+      {
+        "ex_date": "2018-06-15",
+        "dividend": 1.246,
+        "vendor_step_bps": 0.03,
+        "crsp_step_bps": 44.91,
+        "diff_bps": -44.88,
+        "bad": true
+      }
+    ],
+    "note": "why the vendor adjusted series was abandoned; every non-bad event's factor also corroborates the Yahoo dividend amounts to <0.5 bps"
+  },
+  "raw_print_divergence_yahoo_vs_sip_bps": {
+    "mean": 1.119,
+    "p99": 8.292,
+    "max": 279.345,
+    "worst_dates": {
+      "2020-03-12": 279.34,
+      "2020-03-18": 182.87,
+      "2020-03-09": 75.64
+    }
+  },
+  "locked_spec_check": {
+    "compared": "self-adjusted splice vs Yahoo-adjusted, 2016-2017, boundary-rescaled",
+    "overlap_sessions": 503,
+    "level_divergence_bps": {
+      "mean": 0.893,
+      "p99": 4.681,
+      "max": 10.818,
+      "worst_dates": {
+        "2016-02-29": 10.82,
+        "2017-08-31": 8.03,
+        "2017-10-26": 5.42
+      }
+    },
+    "daily_return_divergence_bps": {
+      "mean": 1.331,
+      "p99": 6.591,
+      "max": 11.112,
+      "worst_dates": {
+        "2016-03-01": 11.11,
+        "2016-02-29": 10.72,
+        "2017-08-31": 8.13
+      }
+    },
+    "level_bar_bps": 5.0,
+    "pass_mean": true,
+    "pass_max": false
+  },
+  "self_vs_alpaca_adjusted_after_last_bad_event_bps": {
+    "mean": 0.488,
+    "p99": 0.728,
+    "max": 0.766,
+    "worst_dates": {
+      "2020-03-31": 0.77,
+      "2020-03-18": 0.75,
+      "2018-12-31": 0.75
+    }
+  },
+  "git_commit": "ccab57da06099d7d7661110f2b762f6092058324"
+}
