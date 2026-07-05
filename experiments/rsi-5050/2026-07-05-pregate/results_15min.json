@@ -1,0 +1,121 @@
+{
+  "label": "15min",
+  "bars_file": "data/DIA_15m.parquet",
+  "bars_range": [
+    "2017-12-01 09:45:00-05:00",
+    "2026-07-02 16:00:00-04:00"
+  ],
+  "is_window": [
+    "2018-01-01",
+    "2021-12-31"
+  ],
+  "params": {
+    "rsi_n": 21,
+    "atr_n": 5,
+    "band_bps": [
+      4.5,
+      6.8
+    ],
+    "buffer": "max(0.04*ATR5, $0.02)",
+    "pending_bars": 10,
+    "warmup_bars": 250,
+    "round_trip_cost_bps": 3.5
+  },
+  "git_commit": "4cbf729b0f25b2b3747daa3c3d5664d9018fa7f6",
+  "counts": {
+    "crosses_is": 2058,
+    "band_pass": 48,
+    "time_gated": 39,
+    "armed": 39,
+    "cancelled_recross": 4,
+    "cancelled_stale": 0,
+    "cancelled_cutoff": 7,
+    "filled": 28
+  },
+  "trades_per_year": 7.0,
+  "all": {
+    "n": 28,
+    "mean_bps": -2.862,
+    "median_bps": -3.643,
+    "std_bps": 6.992,
+    "t_stat": -2.17,
+    "hit_rate": 0.25,
+    "mean_fill_bps": -2.888,
+    "mean_with_stop_bps": -2.331
+  },
+  "long": {
+    "n": 14,
+    "mean_bps": -3.225,
+    "median_bps": -3.927,
+    "std_bps": 6.747,
+    "t_stat": -1.79,
+    "hit_rate": 0.286,
+    "mean_fill_bps": -3.225,
+    "mean_with_stop_bps": -2.631
+  },
+  "short": {
+    "n": 14,
+    "mean_bps": -2.499,
+    "median_bps": -3.161,
+    "std_bps": 7.466,
+    "t_stat": -1.25,
+    "hit_rate": 0.214,
+    "mean_fill_bps": -2.552,
+    "mean_with_stop_bps": -2.03
+  },
+  "by_exit": {
+    "eod": {
+      "n": 11,
+      "mean_bps": 3.593,
+      "median_bps": 4.643,
+      "std_bps": 5.765,
+      "t_stat": 2.07,
+      "hit_rate": 0.636,
+      "mean_fill_bps": 3.593,
+      "mean_with_stop_bps": 3.3
+    },
+    "recross": {
+      "n": 17,
+      "mean_bps": -7.039,
+      "median_bps": -5.918,
+      "std_bps": 3.814,
+      "t_stat": -7.61,
+      "hit_rate": 0.0,
+      "mean_fill_bps": -7.082,
+      "mean_with_stop_bps": -5.974
+    }
+  },
+  "by_tod": {
+    "close": {
+      "n": 16,
+      "mean_bps": -0.204,
+      "median_bps": -2.732,
+      "std_bps": 7.437,
+      "t_stat": -0.11,
+      "hit_rate": 0.438,
+      "mean_fill_bps": -0.204,
+      "mean_with_stop_bps": -0.089
+    },
+    "midday": {
+      "n": 11,
+      "mean_bps": -6.829,
+      "median_bps": -5.173,
+      "std_bps": 4.505,
+      "t_stat": -5.03,
+      "hit_rate": 0.0,
+      "mean_fill_bps": -6.896,
+      "mean_with_stop_bps": -5.643
+    },
+    "open": {
+      "n": 1,
+      "mean_bps": -1.754,
+      "median_bps": -1.754,
+      "std_bps": NaN,
+      "t_stat": NaN,
+      "hit_rate": 0.0,
+      "mean_fill_bps": -1.754,
+      "mean_with_stop_bps": -1.754
+    }
+  },
+  "verdict": "FAIL (mean gross continuation <= modeled round-trip cost \u2014 reject at spec validation)"
+}
