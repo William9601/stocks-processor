@@ -1,0 +1,117 @@
+{
+  "strategy": "orb",
+  "bars_file": "/Users/williamvonarend/projects/stockProcessor/data/QQQ_5m_adj.parquet",
+  "bars_range": [
+    "2018-01-02 14:35:00+00:00",
+    "2024-12-30 21:00:00+00:00"
+  ],
+  "is_window": [
+    "2018-01-01",
+    "2022-12-31"
+  ],
+  "windows_not_read": "OOS 2023-2024, WF 2025->",
+  "params": {
+    "cost_bar_bps": 2.0,
+    "target_r_diagnostic": 10.0,
+    "risk_pct": 0.005
+  },
+  "gate": "IS mean gross > 2.0 bps AND > unconditional long O2->final-open mean",
+  "counts": {
+    "sessions_is": 1259,
+    "skip_no_bar1": 0,
+    "skip_short_session": 2,
+    "skip_doji": 5,
+    "skip_zero_range": 0,
+    "skip_born_stopped": 1,
+    "traded": 1251
+  },
+  "trades_per_year": 250.2,
+  "all": {
+    "n": 1251,
+    "mean_bps": 4.668,
+    "median_bps": -17.86,
+    "std_bps": 74.3,
+    "t_stat": 2.22,
+    "hit_rate": 0.239
+  },
+  "unconditional_long_same_sessions_bps": 1.193,
+  "edge_vs_unconditional_bps": 3.474,
+  "long": {
+    "n": 644,
+    "mean_bps": 4.83,
+    "median_bps": -17.81,
+    "std_bps": 73.1,
+    "t_stat": 1.68,
+    "hit_rate": 0.252
+  },
+  "short": {
+    "n": 607,
+    "mean_bps": 4.495,
+    "median_bps": -17.89,
+    "std_bps": 75.5,
+    "t_stat": 1.47,
+    "hit_rate": 0.226
+  },
+  "by_exit": {
+    "eod": {
+      "n": 315,
+      "mean_bps": 101.831,
+      "median_bps": 83.17,
+      "std_bps": 90.2,
+      "t_stat": 20.04,
+      "hit_rate": 0.949
+    },
+    "stop": {
+      "n": 936,
+      "mean_bps": -28.032,
+      "median_bps": -23.45,
+      "std_bps": 19.7,
+      "t_stat": -43.55,
+      "hit_rate": 0.0
+    }
+  },
+  "by_year": {
+    "2018": {
+      "n": 247,
+      "mean_bps": 8.356
+    },
+    "2019": {
+      "n": 251,
+      "mean_bps": 3.056
+    },
+    "2020": {
+      "n": 250,
+      "mean_bps": 0.616
+    },
+    "2021": {
+      "n": 252,
+      "mean_bps": 3.706
+    },
+    "2022": {
+      "n": 251,
+      "mean_bps": 7.651
+    }
+  },
+  "stop_rate": 0.748,
+  "median_bars_to_stop": 2.0,
+  "stop_dist_bps_quartiles": [
+    15.9,
+    24.7,
+    36.5
+  ],
+  "realized_risk_pct_median": 0.247,
+  "notional_cap_binds_frac": 0.881,
+  "diagnostic_10r_NOT_SCORED": {
+    "all": {
+      "n": 1251,
+      "mean_bps": 4.395,
+      "median_bps": -17.86,
+      "std_bps": 73.1,
+      "t_stat": 2.13,
+      "hit_rate": 0.241
+    },
+    "target_hit_frac": 0.0216
+  },
+  "verdict": "PASS pre-scoring gate \u2014 build the intrabar-stop core extension, then engine backtest",
+  "git_commit": "7d53c1955038ab3d9b9028373c3876bc4ba78ba4"
+}

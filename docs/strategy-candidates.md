@@ -63,7 +63,17 @@ the queue.** Original entry kept for the record:
   source — the Alpaca-only fallback likely fails the ≥60-OOS-trade bar by construction),
   then run the pre-scoring diagnostic before any engine code.
 
-### 2. Opening range breakout (ORB), 5-min, QQQ — the day-trading candidate
+### 2. Opening range breakout (ORB), 5-min, QQQ — **SPEC'D, PREGATE PASSED 2026-07-05**
+
+Outcome: spec approved and frozen (`strategies/orb/SPEC.md`, 6 baselines signed off:
+EoD-only exit, 2.0 bps cost bar, IS 2018–2022 / OOS 2023–2024 post-publication / WF
+2025→, strict Sharpe ≥ 1.0 + beat-B&H bars, 10% kill, unlevered R=0.5%). Pregate
+**passed** — the lab's first: IS mean gross +4.67 bps/trade (t=2.22) vs 2.0 bps bar,
+both sides positive, all five years positive, payoff shape as published
+(`experiments/orb/2026-07-05-pregate/`). Next: core intrabar-stop extension + engine
+backtest; the OOS bars remain a high hurdle. Original entry kept for the record:
+
+### ~~2.~~ Opening range breakout (ORB), 5-min, QQQ — the day-trading candidate
 
 - **Effect:** direction of the first 5 minutes predicts intraday follow-through; enter
   at bar 2 in that direction, stop at the opening bar's opposite extreme, ~10R target
