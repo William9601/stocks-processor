@@ -115,7 +115,7 @@ Independent quant-reviewer pass over commits `6d4c718` + `4f5f2ef`:
   measurement change — fills logged before/after differ in decision-bar feed and
   print-fetch latency, though the official reference prints are SIP daily bars on
   both paths and paper fills come from the same Alpaca simulator regardless. As of
-  this writing **no fills have been logged on either policy**; the first paper
-  session is 2026-07-06 and the user decides whether the upgrade merges before it
-  (whole log on SIP policy) or after session 1 (session 1 on the 2026-07-04
-  free-tier policy — annotate here if so).
+  this writing **no fills have been logged on either policy**. **User decision
+  2026-07-05: merged to main BEFORE the first paper session (2026-07-06)** — the
+  entire fill log therefore sits on the SIP policy from session 1; there is no
+  free-tier-policy segment to account for in the week-1 analysis.
