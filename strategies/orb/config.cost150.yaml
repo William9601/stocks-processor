@@ -15,6 +15,7 @@ risk:
   risk_per_trade: 0.005
   daily_loss_limit_r: 2.0
   max_drawdown: 0.10
+  halt_on_drawdown: false   # see config.yaml
   point_value: 1.0
   allow_leverage: false
 

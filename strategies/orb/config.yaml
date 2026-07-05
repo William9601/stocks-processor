@@ -13,6 +13,9 @@ risk:
   risk_per_trade: 0.005     # R = 0.5% of equity, stop-distance sized
   daily_loss_limit_r: 2.0   # house backstop (binds only on gap-through overshoot)
   max_drawdown: 0.10        # kill switch, tighter than house 15% (SPEC sign-off #5)
+  halt_on_drawdown: false   # backtest measures the full-window DD the locked
+                            # <=10% criterion judges; a mid-simulation halt would
+                            # censor it. Any paper deployment sets this true.
   point_value: 1.0
   allow_leverage: false     # notional capped at 100% of equity, never renegotiated
 

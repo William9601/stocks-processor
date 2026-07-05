@@ -1,0 +1,38 @@
+strategy:
+  path: strategies/orb
+  params: {}
+instrument:
+  symbol: QQQ
+  bar_minutes: 5
+risk:
+  risk_per_trade: 0.005
+  daily_loss_limit_r: 2.0
+  max_drawdown: 0.1
+  halt_on_drawdown: false
+  point_value: 1.0
+  allow_leverage: false
+costs:
+  commission_per_unit: 0.0
+  half_spread_bps: 0.1
+  slippage_bps: 0.4
+  stop_slippage_bps: 1.0
+backtest:
+  starting_cash: 100000.0
+  in_sample:
+    start: '2018-01-01'
+    end: '2022-12-31'
+  out_of_sample:
+    start: '2023-01-01'
+    end: '2024-12-31'
+  walk_forward:
+    start: '2025-01-01'
+    end: null
+data:
+  source: data/QQQ_5m_adj.parquet
+  provider: alpaca-sip
+  adjustment: all
+provenance:
+  git_commit: 20796a5e0f39c91d02a074383448c24fb5a03f53
+  sample: oos
+  synthetic_data: false
+  run_at: '2026-07-05T16:39:44'

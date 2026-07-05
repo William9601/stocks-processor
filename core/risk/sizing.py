@@ -29,6 +29,14 @@ class RiskLimits:
     max_drawdown: float = 0.15  # 15% peak-to-trough kill switch
     point_value: float = 1.0  # $ per 1.0 price point per unit (1.0 for shares)
     allow_leverage: bool = False
+    # Whether tripping the kill switch vetoes all further entries. True is the
+    # paper/live behavior (a tripped switch halts the book for manual review
+    # and must survive restarts). Backtests measuring a strategy against a
+    # locked max-drawdown CRITERION set this False: a permanent mid-simulation
+    # halt would censor the very drawdown the criterion judges (and make the
+    # bar self-fulfilling). ``halted`` is still set either way and is always
+    # reported.
+    halt_on_drawdown: bool = True
 
 
 class RiskManager:
@@ -117,7 +125,7 @@ class RiskManager:
         if order.action is Action.CLOSE:
             return order
 
-        if self.halted or self._day_locked:
+        if (self.halted and self.limits.halt_on_drawdown) or self._day_locked:
             return None
         if order.stop_distance is None or order.stop_distance <= 0:
             return None

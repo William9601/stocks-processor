@@ -54,6 +54,26 @@ def test_lock_fires_even_when_risk_only_sees_order_bars():
     assert rm.size(_entry(), _ctx("2024-06-04 15:40", 98_800.0), ref_price=300.0) is None
 
 
+def test_drawdown_kill_switch_halts_by_default_but_not_in_measurement_mode():
+    # -20% from peak trips the switch under the default 15% limit. The daily
+    # loss cap is parked out of the way so only the kill switch is in play.
+    rm = RiskManager(RiskLimits(max_drawdown=0.15, daily_loss_limit_r=1e9))
+    rm.on_bar(_ctx("2024-06-03 10:00", 100_000.0))
+    rm.on_bar(_ctx("2024-06-03 15:40", 80_000.0))
+    assert rm.halted
+    assert rm.size(_entry(), _ctx("2024-06-03 15:45", 80_000.0), ref_price=300.0) is None
+
+    # Measurement mode: the switch still trips (reported) but entries continue,
+    # so a backtest can measure the true drawdown its criterion judges.
+    rm2 = RiskManager(
+        RiskLimits(max_drawdown=0.15, halt_on_drawdown=False, daily_loss_limit_r=1e9)
+    )
+    rm2.on_bar(_ctx("2024-06-03 10:00", 100_000.0))
+    rm2.on_bar(_ctx("2024-06-03 15:40", 80_000.0))
+    assert rm2.halted  # still set: it is reported, just not entry-vetoing
+    assert rm2.size(_entry(), _ctx("2024-06-03 15:45", 80_000.0), ref_price=300.0) is not None
+
+
 def test_small_overnight_loss_does_not_lock():
     rm = RiskManager(RiskLimits(risk_per_trade=0.005, daily_loss_limit_r=2.0))
     rm.on_bar(_ctx("2024-06-03 16:00", 100_000.0))
