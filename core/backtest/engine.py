@@ -25,7 +25,7 @@ day.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from core.backtest.costs import CostModel
 from core.backtest.metrics import compute_metrics
@@ -41,6 +41,15 @@ class BacktestResult:
     trades: list[Trade]
     metrics: dict
     equity_end: float
+    # Mark-to-market equity at every bar close (marks OPEN positions too, unlike
+    # the realized-trade daily curve in metrics.py). Lets a run report the true
+    # peak-to-trough drawdown the kill switch would see — the quant-reviewer
+    # follow-up from the ORB review. List of (bar-close ts, equity).
+    mtm_curve: list[tuple[object, float]] = field(default_factory=list)
+    # Whether the drawdown kill switch tripped during the run (reported even
+    # when halt_on_drawdown is False, so a backtest measuring the DD criterion
+    # still surfaces a breach instead of silently censoring it).
+    risk_halted: bool = False
 
 
 class BacktestEngine:
@@ -69,6 +78,7 @@ class BacktestEngine:
         closes = session_closes(et_index)
 
         prev_day = None
+        mtm_curve: list[tuple[object, float]] = []
         for i in range(len(bars)):
             bar = bars.iloc[i]
             ts = idx[i]
@@ -102,6 +112,7 @@ class BacktestEngine:
             # 4: point-in-time context (no future rows).
             close_px = float(bar["close"])
             equity = self.broker.equity(close_px)
+            mtm_curve.append((ts, equity))  # marks open positions, not just realized
             ctx = Context(
                 symbol=symbol,
                 history=bars.iloc[: i + 1],
@@ -143,4 +154,6 @@ class BacktestEngine:
             trades=self.broker.trades,
             metrics=metrics,
             equity_end=self.broker.equity(float(bars.iloc[-1]["close"])),
+            mtm_curve=mtm_curve,
+            risk_halted=bool(getattr(self.risk, "halted", False)),
         )

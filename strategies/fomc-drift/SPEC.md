@@ -1,6 +1,9 @@
 # Strategy: fomc-drift
 
-- **Status**: approved (user sign-offs 2026-07-06; criteria FROZEN)
+- **Status**: **REJECTED at the OOS engine gate (2026-07-06)** — see Verdict at
+  the end of this file. Spec approved + criteria FROZEN 2026-07-06; pregate PASSED
+  (EDGE(IS)=30.35 bps); implemented and cross-checked exact; the one OOS look was
+  spent and the frozen bars were not cleared. No tuning, no rescue. WF unread.
 - **Created**: 2026-07-06
 - **One-liner**: Hold SPY long over the ~24 hours before each scheduled FOMC announcement (buy the close of the day before, sell the close of the announcement day) to harvest the pre-FOMC announcement drift.
 
@@ -501,3 +504,57 @@ on the list — it was fixed at drafting.
 on the IS window only, outside the engine; OOS and WF stay unread. Expected outcome
 per the lab's base rate: reject at the reproduction bar or the cost bar — a fine
 outcome that costs one session.
+
+## Verdict — REJECTED at the OOS gate (2026-07-06)
+
+The full pre-registered pipeline ran exactly as frozen: pregate PASS (EDGE(IS)=
+30.35 bps) → implement against core → engine IS cross-check EXACT (176/176 events
+reconcile to the pregate, max |gross diff| 0.00000 bps) → **the ONE OOS look
+(2016-2024) + the 1.5×-cost companion**. The drift does not survive the
+post-publication window. Full writeup + scorecard:
+`experiments/fomc-drift/2026-07-06-2011-oos/notes.md` (companion:
+`…-oos-cost150/`). quant-reviewer: no blockers, REJECT trustworthy, fills provably
+`close(T-1)→close(T)` with zero lookahead.
+
+**OOS scorecard (net of 2.0 bps; n=71 scheduled events):** four frozen bars fail.
+
+| # | Frozen bar | Result | |
+|---|---|---|---|
+| 1 | OOS net zero-filled Sharpe ≥ 0.7 | 0.109 (0.087 @1.5× cost) | **FAIL** |
+| 2 | EDGE(OOS) ≥ 2.0 bps gross | 1.87 bps (net conditional −0.13) | **FAIL** |
+| 4 | net-positive/event, and at 1.5× costs | −0.13 / −1.13 bps | **FAIL** |
+| 5 | Max OOS drawdown ≤ 6·R (3.0%) | 0.69% | pass |
+| 6 | Worst single event ≤ 2.5·R | 0.57·R (2024-12-18) | pass |
+| 7 | ≥ 64 filled OOS events | 71 | pass |
+| 8 | IS→OOS decay ≤ 50% | 0.728 → 0.109 = −85% | **FAIL** |
+
+**Why it failed — the pre-registered hypothesis, confirmed and rejected.** The
+uncertainty-state-dependence this spec set out to test is *real*: dead zone
+2016-2019 EDGE = **−15.90 bps** (n=32, worse than Kurov's insignificant +9.2),
+revival 2020-2024 EDGE = **+16.44 bps** (n=39, matching QuantSeeker). But the two
+eras blend to EDGE ≈ +1.87 bps gross / −0.13 net. The strategy trades
+**unconditionally** by design, so it is judged on the blend, and the blend does
+not pay for its own round trip. The **LOCKED no-rescue clause** binds: the strong
+revival is not a promotion path, and gating on VIX/uncertainty to harvest only the
+revival would be a new tuned parameter and a sweep this spec forbids. This is the
+outcome the OOS window was constructed to force — the 2016-2019 dead zone was
+placed inside the OOS on purpose.
+
+**Sixth candidate death (fifth published-then-gone confirmation).** The premium is
+present only in the policy-uncertainty regime the unconditional book cannot
+isolate. Failure is at the gross/conditional-edge level, not execution — mirror of
+ORB and spx-swing.
+
+**What survives as infrastructure** (validated, reusable): (a) the daily-bar MOC
+path now works on the shared core — `core/backtest/engine.py` moves the day-roll
+`expire_pending(NEXT_CLOSE)` to AFTER `process_close` so a NEXT_CLOSE decided on
+`T-2` fills at the next session's close (`T-1`), honoring the FillTiming contract
+without opening any intraday hole (all intraday strategies unchanged); (b)
+`scripts/build_spy_daily_moc.py` — session-close re-stamp of the daily splice with
+a missing-session guard, the required adapter for any future daily-bar MOC
+strategy; (c) `run_backtest.py`/engine now export `risk_halted`,
+`max_drawdown_mtm`, and per-run `data_sha256` (the ORB reviewer follow-ups, now
+paid). **Overlap report vs overnight-long: MOOT** — the reject stops the strategy
+before paper, so the pre-paper portfolio-integration gate does not apply (mechanical
+bound was ≤ ~8 overlap nights/yr at ~3% market exposure; full correlation not run).
+WF 2025→ was never read.

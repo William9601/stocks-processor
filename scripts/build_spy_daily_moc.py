@@ -61,6 +61,22 @@ def restamp_to_session_close(bars: pd.DataFrame) -> pd.DataFrame:
     return out.sort_index()
 
 
+def _assert_no_missing_sessions(bars: pd.DataFrame) -> None:
+    """Abort if the series is not exactly the XNYS sessions over its range."""
+    import exchange_calendars as xcals
+
+    et = bars.index.tz_convert(ET)
+    bdates = {pd.Timestamp(d) for d in et.normalize().date}
+    cal = xcals.get_calendar("XNYS", start=str(min(bdates).date()))
+    xsess = set(cal.sessions_in_range(min(bdates), max(bdates)))
+    missing = sorted(xsess - bdates)
+    if missing:
+        raise SystemExit(
+            f"{len(missing)} XNYS session(s) missing from the series — a daily-bar "
+            f"MOC would fill on the wrong close. First: {[str(m.date()) for m in missing[:10]]}"
+        )
+
+
 def file_sha(p: Path) -> str:
     return hashlib.sha256(p.read_bytes()).hexdigest()
 
@@ -88,6 +104,14 @@ def main() -> None:
         )
     if len(kept) != n_in:
         raise SystemExit(f"row count changed: {n_in} -> {len(kept)} (re-stamp is lossy)")
+
+    # Missing-session guard (quant-reviewer follow-up): the engine fills a
+    # daily-bar MOC at the NEXT PRESENT bar's close. If a session were missing
+    # from the series, a BUY decided on T-2 would fill at the wrong close
+    # (close(T) instead of close(T-1)) silently. Assert the series is exactly
+    # the XNYS sessions over its range, so any daily-bar MOC strategy built on
+    # this file is safe by construction.
+    _assert_no_missing_sessions(kept)
 
     kept = kept[BAR_COLUMNS].astype(float)
     args.out.parent.mkdir(parents=True, exist_ok=True)

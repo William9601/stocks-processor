@@ -28,6 +28,23 @@ from core.risk.sizing import RiskLimits, RiskManager
 REPO = Path(__file__).resolve().parents[1]
 
 
+def file_sha(path: Path) -> str:
+    import hashlib
+
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+def mtm_max_drawdown(curve: list[tuple[object, float]]) -> float:
+    """Peak-to-trough drawdown of the mark-to-market equity curve (<= 0)."""
+    peak = float("-inf")
+    max_dd = 0.0
+    for _, equity in curve:
+        peak = max(peak, equity)
+        if peak > 0:
+            max_dd = min(max_dd, equity / peak - 1.0)
+    return max_dd
+
+
 def git_commit() -> str:
     try:
         return subprocess.check_output(
@@ -77,6 +94,16 @@ def main() -> None:
         starting_cash=cfg["backtest"]["starting_cash"], sample=args.sample,
     )
     result = engine.run()
+
+    # Quant-reviewer follow-ups (ORB review): surface the kill-switch state and
+    # the mark-to-market drawdown (marks open positions, not only realized
+    # trades) so a DD criterion is judged on what the switch would actually see,
+    # and pin the (gitignored) data file by hash for reproducibility.
+    result.metrics["risk_halted"] = engine.risk.halted
+    result.metrics["max_drawdown_mtm"] = mtm_max_drawdown(result.mtm_curve)
+    source = cfg.get("data", {}).get("source")
+    if source:
+        result.metrics["data_sha256"] = file_sha(REPO / source)
 
     print(json.dumps(result.metrics, indent=2, default=str))
     write_experiment(cfg, args, result, synthetic)

@@ -156,7 +156,7 @@ published-then-gone pattern (after intraday-momentum, spx-swing, ORB) — and co
 with the mechanism still existing while being front-run away: the flows didn't stop,
 the price impact moved and shrank. Cost of the screen: under an hour, no spec, no code.
 
-### 6. Pre-FOMC announcement drift, SPY — PASSED research screen 2026-07-06 (front of queue)
+### 6. Pre-FOMC announcement drift, SPY — REJECTED at the OOS engine gate 2026-07-06
 
 - **Effect:** large positive US equity returns in the ~24h before scheduled FOMC
   announcements. [Lucca & Moench (2015)](https://www.newyorkfed.org/research/staff_reports/sr512.html):
@@ -205,8 +205,19 @@ the price impact moved and shrank. Cost of the screen: under an hour, no spec, n
   crisis-weighted (2008 +145, 2009 +116 bps; several calm years negative) — exactly the
   pre-registered uncertainty-state-dependence, and the OOS front-loads the 2016–2019
   dead zone. Full write-up `experiments/fomc-drift/2026-07-06-pregate/notes.md`.
-  **Next (spends the scarce OOS look):** implement against core (no extension) → engine
-  IS cross-check → the one OOS look 2016–2024 + 1.5×-cost companion → quant-reviewer.
+- **Verdict 2026-07-06 — REJECTED at the OOS engine gate.** Implemented against core,
+  engine IS cross-check EXACT (176/176 events, max diff 0.00000 bps), then the one
+  pre-registered OOS look. OOS 2016–2024 (n=71): `EDGE(OOS) = 1.87 bps` gross (net
+  −0.13), zero-filled Sharpe 0.109 vs the ≥0.7 bar — four frozen bars fail (#1/#2/#4/#8).
+  The uncertainty-state-dependence was *confirmed* (dead zone 2016–2019 EDGE −15.9 /
+  revival 2020–2024 EDGE +16.4) but the two cancel; the unconditional book earns the
+  ~zero blend and the LOCKED no-rescue clause forbids gating to harvest only the revival.
+  Sixth candidate death; failure is at the gross/edge level, not execution (quant-reviewer:
+  REJECT trustworthy). Verdict + scorecard in `strategies/fomc-drift/SPEC.md` and
+  `experiments/fomc-drift/2026-07-06-2011-oos/notes.md`. Infra that survives: daily-bar
+  MOC now works on the shared core (engine `expire_pending(NEXT_CLOSE)` reorder +
+  `scripts/build_spy_daily_moc.py` session-close re-stamp), and the ORB reviewer
+  follow-ups (`risk_halted`, `max_drawdown_mtm`, per-run `data_sha256`) are now paid.
 
 ### 7. Sector-ETF momentum rotation — REJECTED at research stage 2026-07-06
 

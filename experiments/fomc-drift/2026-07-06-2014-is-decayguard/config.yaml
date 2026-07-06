@@ -1,0 +1,39 @@
+strategy:
+  path: strategies/fomc-drift
+  params: {}
+instrument:
+  symbol: SPY
+  bar_minutes: 1440
+risk:
+  risk_per_trade: 0.005
+  daily_loss_limit_r: 2.0
+  max_drawdown: 0.05
+  halt_on_drawdown: false
+  point_value: 1.0
+  allow_leverage: false
+costs:
+  commission_per_unit: 0.0
+  half_spread_bps: 0.5
+  slippage_bps: 0.5
+  stop_slippage_bps: 1.0
+  close_slippage_bps: 0.5
+backtest:
+  starting_cash: 100000.0
+  in_sample:
+    start: '1994-01-01'
+    end: '2015-12-31'
+  out_of_sample:
+    start: '2016-01-01'
+    end: '2024-12-31'
+  walk_forward:
+    start: '2025-01-01'
+    end: null
+data:
+  source: data/SPY_daily_moc.parquet
+  provider: self-adjusted-splice
+  adjustment: self-adjusted
+provenance:
+  git_commit: 8a0a6fb43df06628a97c8f2aeac62be30492ac69
+  sample: is
+  synthetic_data: false
+  run_at: '2026-07-06T20:14:12'
