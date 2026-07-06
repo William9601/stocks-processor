@@ -185,9 +185,13 @@ the price impact moved and shrank. Cost of the screen: under an hour, no spec, n
   `FillTiming.NEXT_CLOSE`, **no core extension**. Freeze the exact window from the
   literature at spec time; no sweeps.
 - **Honest problems for the spec:** ~8 events/yr — thinner than ToM's 12; power
-  exists only because the audited splice `data/SPY_daily_adj_spliced.parquet`
-  reaches 1994→ (~240 events). The pre-registered OOS era must contain the
-  2016–2019 dead zone (no cherry-picking the revival). Benchmark gate vs same-length
+  requires long history. Correction (2026-07-06, caught at spec drafting): the
+  audited splice `data/SPY_daily_adj_spliced.parquet` as built covers
+  **2002-09-03 → 2026-07-02** (`experiments/spx-swing/2026-07-05-pregate/splice_report.json`),
+  not 1994 as this entry first claimed — extending it to 1993-06 with the same
+  audit is a blocking data task in the spec, with a pre-declared fallback IS of
+  2003–2015 (~104 events) if the extension fails audit. The pre-registered OOS era
+  must contain the 2016–2019 dead zone (no cherry-picking the revival). Benchmark gate vs same-length
   unconditional drift mandatory. Overlap with the overnight-long paper book is
   material (long SPY over FOMC nights). Needs a historical FOMC meeting calendar
   (public, Fed website) as a new data input — signal is calendar-driven, no lookahead
