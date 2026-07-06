@@ -196,8 +196,17 @@ the price impact moved and shrank. Cost of the screen: under an hour, no spec, n
   material (long SPY over FOMC nights). Needs a historical FOMC meeting calendar
   (public, Fed website) as a new data input — signal is calendar-driven, no lookahead
   risk if scheduled dates are used as announced.
-- **Next step:** strategy-designer spec → user sign-offs → pregate outside the engine
-  (the ToM handover's funnel, unchanged).
+- **Progress 2026-07-06:** spec approved and frozen (`strategies/fomc-drift/SPEC.md`),
+  both blocking data tasks done (splice extended to 1993-06; committed audited
+  `fomc_calendar.csv`, 263 scheduled meetings), and the **pregate PASSED** — the lab's
+  second pass after ORB. IS 1994–2015 (n=176, OOS/WF unread): `EDGE(IS) = 30.35 bps`,
+  t ≈ 3.4, hit 59.7%, clearing both the 2.0 bps cost bar and the 20 bps reproduction
+  bar (~2/3 of the LM ~45 bps headline). Honest caveat carried forward: the IS edge is
+  crisis-weighted (2008 +145, 2009 +116 bps; several calm years negative) — exactly the
+  pre-registered uncertainty-state-dependence, and the OOS front-loads the 2016–2019
+  dead zone. Full write-up `experiments/fomc-drift/2026-07-06-pregate/notes.md`.
+  **Next (spends the scarce OOS look):** implement against core (no extension) → engine
+  IS cross-check → the one OOS look 2016–2024 + 1.5×-cost companion → quant-reviewer.
 
 ### 7. Sector-ETF momentum rotation — REJECTED at research stage 2026-07-06
 
