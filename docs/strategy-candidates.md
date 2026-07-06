@@ -156,15 +156,70 @@ published-then-gone pattern (after intraday-momentum, spx-swing, ORB) — and co
 with the mechanism still existing while being front-run away: the flows didn't stop,
 the price impact moved and shrank. Cost of the screen: under an hour, no spec, no code.
 
+### 6. Pre-FOMC announcement drift, SPY — PASSED research screen 2026-07-06 (front of queue)
+
+- **Effect:** large positive US equity returns in the ~24h before scheduled FOMC
+  announcements. [Lucca & Moench (2015)](https://www.newyorkfed.org/research/staff_reports/sr512.html):
+  +49 bps per event on average 1994–2011, ~80% of the annual equity premium earned on
+  ~8 days/yr. Mechanism candidates: compensation for bearing announcement risk while
+  uncertainty resolves into the release (Hu-Pan-Wang-Zhu 2019) — a deliberate-payer
+  story, like ToM's, but with a fixed, scheduled anchor event.
+- **The adversarial fact, on the record before any spec:**
+  [Kurov, Wolfe & Gilbert (Finance Research Letters 2021)](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3134546)
+  extend the sample to Dec 2019 and find the drift "essentially disappeared after
+  2015" — mean pre-FOMC return Jan 2016–Dec 2019 ≈ **9.2 bps, insignificant** —
+  attributing it to reduced uncertainty in the ZLB era. Ben Dor & Rosa (2019)
+  dispute, finding no change. [QuantSeeker (2025)](https://www.quantseeker.com/p/trading-the-fed-the-pre-fomc-drift)
+  (SPY EOD close-to-close windows, 1993–2024) finds the FOMC-vs-other-days
+  difference strongly significant over the full sample, confirms the flat
+  2016–2019 stretch, and shows renewed performance 2020–2024 (after-cost Sharpe
+  ~0.5–0.6 trading ~5% of days). The consistent read: **uncertainty-state-dependent,
+  not monotonically decayed** — it faded in the ZLB calm and returned with policy
+  uncertainty. That is a falsifiable claim a pregate can test, not mush.
+- **Window definitions:** onset differs across studies (LM: 2pm day prior → 2:15pm
+  announcement; [Boguth-Grégoire-Martineau](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3134546):
+  onset at prior-day open, press-conference meetings only; practitioner EOD variants:
+  prior close → announcement-day close). Unlike ToM, the anchor is a fixed scheduled
+  event, and the lab's daily-bar infrastructure forces the implementable window
+  anyway: MOC buy the day before → MOC sell announcement day via existing
+  `FillTiming.NEXT_CLOSE`, **no core extension**. Freeze the exact window from the
+  literature at spec time; no sweeps.
+- **Honest problems for the spec:** ~8 events/yr — thinner than ToM's 12; power
+  exists only because the audited splice `data/SPY_daily_adj_spliced.parquet`
+  reaches 1994→ (~240 events). The pre-registered OOS era must contain the
+  2016–2019 dead zone (no cherry-picking the revival). Benchmark gate vs same-length
+  unconditional drift mandatory. Overlap with the overnight-long paper book is
+  material (long SPY over FOMC nights). Needs a historical FOMC meeting calendar
+  (public, Fed website) as a new data input — signal is calendar-driven, no lookahead
+  risk if scheduled dates are used as announced.
+- **Next step:** strategy-designer spec → user sign-offs → pregate outside the engine
+  (the ToM handover's funnel, unchanged).
+
+### 7. Sector-ETF momentum rotation — REJECTED at research stage 2026-07-06
+
+Screened same day as ToM and FOMC drift; killed on the recent-decade evidence.
+Traditional sector momentum diminished as ETFs raised sector efficiency and
+cross-sector correlation — [Quantpedia](https://quantpedia.com/strategies/sector-momentum-rotational-system)'s
+3-long/3-short 12-month variant now shows negative returns and high drawdowns, and
+[CXO Advisory](https://www.cxoadvisory.com/momentum-investing/simple-sector-etf-momentum-strategy-performance/)
+finds simple sector-ETF momentum "does not add value to an equally weighted
+benchmark," having become a drag in the later sample. Surviving published variants
+are long-only holding 4+ of ~10 sectors — closet beta that fails the mandatory
+unconditional-drift benchmark gate by construction. The formulation space (3/6/12-month
+lookback, skip-month, top-K, rebalance frequency — every publication differs) is a
+pre-registration minefield, and the strategy would have maximum overlap with the
+overnight-long paper book (always long equities). Not worth a spec.
+
 ## Recommendation
 
 ~~Resume **spx-swing** (sign-offs → pregate diagnostic → verdict).~~ Done — pregate
 failed, funnel worked as designed. ~~**ORB is next in line via strategy-designer**~~
 Done — pregate passed (the lab's first), then rejected at the OOS engine gate
 2026-07-05. ~~Turn-of-month next~~ — rejected at the research screen 2026-07-06 (see
-#5). **The funnel is empty.** Runner-up candidates from the 2026-07-06 selection —
-FOMC pre-announcement drift and sector-ETF momentum — are queued informally and can be
-promoted to full entries here on request. Treat one candidate at a time — the funnel's
+#5). Both runner-ups screened the same day: sector-ETF momentum rejected (#7),
+**pre-FOMC announcement drift passed (#6) and is next in line via strategy-designer**,
+with the standard pregate-first pattern and the 2016–2019 dead zone mandatorily inside
+the OOS era. Treat one candidate at a time — the funnel's
 value is cheap, honest rejections, and the scarce resource is out-of-sample looks, not
 ideas.
 
