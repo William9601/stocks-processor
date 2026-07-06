@@ -119,14 +119,54 @@ the announcement window ([Quantpedia](https://quantpedia.com/strategies/post-ear
 Would also require a single-name universe and an earnings-calendar data source. Not
 worth a spec.
 
+### 5. Turn-of-the-month (ToM), US index ETFs — REJECTED at research stage 2026-07-06
+
+Chosen 2026-07-06 as the next candidate (month-end pension/401k contribution and
+rebalancing flows — a counterparty that pays deliberately, ~12 events/yr, daily bars,
+near-zero cost drag). Killed at the research screen, before any spec, on all three
+pre-set criteria:
+
+- **Post-2010 effect size is not there.** The most recent broad test (36 ETFs,
+  through Feb 2025) finds the classical Lakonishok-Smidt window returns only "a few
+  basis points" above other days in US equity ETFs, **statistically insignificant**,
+  and concludes the effect "largely disappeared over the past decade." QQQ's ToM
+  effect, very strong in the early 2000s, "gradually diminished to zero"; some US
+  sector ETFs now show a *reversed* (negative) ToM window
+  ([QuantSeeker, Feb 2025](https://www.quantseeker.com/p/turn-of-the-month-strategies-do-they)).
+- **Decay and migration are old news, not new noise.** Documented as early as 2011:
+  after ETF introduction the effect migrated toward the first day of the month
+  ([FPA journal](https://www.financialplanningassociation.org/article/journal/APR11-turn-month-anomaly-age-etfs-reexamination-return-enhancement-strategies));
+  a 1991–2008 S&P futures study found "from several days that bring above-average
+  returns, only one day remains"
+  ([summary](https://www.intalcon.com/magazine/tom-effect-excess-returns-at-the-turn-of-the-month)).
+  QuantSeeker's rolling-difference charts show a consistent downtrend over the last
+  decade; residual strength is in international/EM markets, not US indexes.
+- **Published window definitions do not agree.** Fosback (1975) −1/+4, Lakonishok &
+  Smidt (1988) and [McConnell & Xu (2008)](https://www.chesler.us/resources/academia/turn_of_the_month_stock_returns.pdf)
+  −1/+3, practitioner variants −4/+3 and −3/+3
+  ([Quantpedia](https://quantpedia.com/strategies/turn-of-the-month-in-equity-indexes)),
+  migration studies day +1 only. There is no single window to pre-register without an
+  implicit sweep — the exact failure mode the ORB duration-sweep rule exists to block.
+
+The classic evidence (12 bps/day on the DJIA 1897–1986; persistence through 2005 in
+McConnell & Xu) is real but pre-decay. And the benchmark gate settles it arithmetically:
+SPY's unconditional drift since 2010 is ~5 bps/day, so an insignificant few-bps ToM
+premium is beta plus a calendar story by construction. Fourth instance of the
+published-then-gone pattern (after intraday-momentum, spx-swing, ORB) — and consistent
+with the mechanism still existing while being front-run away: the flows didn't stop,
+the price impact moved and shrank. Cost of the screen: under an hour, no spec, no code.
+
 ## Recommendation
 
 ~~Resume **spx-swing** (sign-offs → pregate diagnostic → verdict).~~ Done — pregate
-failed, funnel worked as designed. **ORB is next in line via strategy-designer**, with
-the standard pregate-first pattern (gross follow-through of the 5-min opening range
-direction, measured outside the engine, before any core intraday-stop machinery gets
-built). Treat one candidate at a time — the funnel's value is cheap, honest rejections,
-and the scarce resource is out-of-sample looks, not ideas.
+failed, funnel worked as designed. ~~**ORB is next in line via strategy-designer**~~
+Done — pregate passed (the lab's first), then rejected at the OOS engine gate
+2026-07-05. ~~Turn-of-month next~~ — rejected at the research screen 2026-07-06 (see
+#5). **The funnel is empty.** Runner-up candidates from the 2026-07-06 selection —
+FOMC pre-announcement drift and sector-ETF momentum — are queued informally and can be
+promoted to full entries here on request. Treat one candidate at a time — the funnel's
+value is cheap, honest rejections, and the scarce resource is out-of-sample looks, not
+ideas.
 
 Data-pipeline follow-up (independent of any strategy): the audits run for the splice
 found Alpaca's `adjustment=all` series missing the 2016-03-18 and 2018-06-15 SPY
