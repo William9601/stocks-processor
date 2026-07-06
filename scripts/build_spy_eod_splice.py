@@ -54,7 +54,10 @@ import pandas as pd
 REPO = Path(__file__).resolve().parents[1]
 ET = ZoneInfo("America/New_York")
 
-YAHOO_START = "2002-09-01"  # >250-session warm-up buffer before IS start 2005-01
+# Default preserves the original spx-swing build (>250-session warm-up before its
+# IS start 2005-01). fomc-drift's spec (Data requirements) extends the same build
+# to 1993-06 via --yahoo-start.
+YAHOO_START_DEFAULT = "2002-09-01"
 LEVEL_BAR_BPS = 5.0  # locked in SPEC.md
 MISSING_EVENT_BPS = 10.0  # |vendor step - CRSP step| above this = missing/bad event
 
@@ -64,11 +67,11 @@ def day_index(idx) -> pd.DatetimeIndex:
     return pd.DatetimeIndex(vals).astype("datetime64[ns]")
 
 
-def fetch_yahoo(cache: Path) -> tuple[pd.DataFrame, pd.DataFrame, pd.Series]:
+def fetch_yahoo(cache: Path, start: str) -> tuple[pd.DataFrame, pd.DataFrame, pd.Series]:
     """Returns (raw OHLCV, yahoo-adjusted OHLCV, dividend series), day-indexed."""
     import yfinance as yf
 
-    hist = yf.Ticker("SPY").history(start=YAHOO_START, auto_adjust=False)
+    hist = yf.Ticker("SPY").history(start=start, auto_adjust=False)
     if hist.empty:
         raise SystemExit("Yahoo returned no data.")
     hist.index = day_index(hist.index)
@@ -78,7 +81,7 @@ def fetch_yahoo(cache: Path) -> tuple[pd.DataFrame, pd.DataFrame, pd.Series]:
     raw.to_parquet(cache)
     divs = hist["Dividends"][hist["Dividends"] > 0]
 
-    adj = yf.download("SPY", start=YAHOO_START, interval="1d", auto_adjust=True, progress=False)
+    adj = yf.download("SPY", start=start, interval="1d", auto_adjust=True, progress=False)
     if isinstance(adj.columns, pd.MultiIndex):
         adj.columns = adj.columns.get_level_values(0)
     adj = adj.rename(columns=str.lower)[["open", "high", "low", "close", "volume"]]
@@ -120,7 +123,8 @@ def crsp_adjust(raw: pd.DataFrame, divs: pd.Series) -> pd.DataFrame:
         log_cum.loc[raw.index < d] += np.log(1.0 - float(div) / float(prev_close.loc[d]))
     factor = np.exp(log_cum)
     adj = raw.copy()
-    adj[["open", "high", "low", "close"]] = raw[["open", "high", "low", "close"]].mul(factor, axis=0)
+    cols = ["open", "high", "low", "close"]
+    adj[cols] = raw[cols].mul(factor, axis=0)
     return adj
 
 
@@ -139,6 +143,7 @@ def main() -> None:
     ap.add_argument("--alpaca-raw", type=Path, default=REPO / "data/SPY_daily_raw_full.parquet")
     ap.add_argument("--out", type=Path, default=REPO / "data/SPY_daily_adj_spliced.parquet")
     ap.add_argument("--yahoo-cache", type=Path, default=REPO / "data/SPY_yahoo_daily_raw.parquet")
+    ap.add_argument("--yahoo-start", default=YAHOO_START_DEFAULT)
     ap.add_argument("--out-dir", type=Path, required=True)
     args = ap.parse_args()
 
@@ -146,7 +151,7 @@ def main() -> None:
     a_raw = pd.read_parquet(args.alpaca_raw)
     for df in (a_adj, a_raw):
         df.index = day_index(df.index)
-    y_raw, y_adj, divs = fetch_yahoo(args.yahoo_cache)
+    y_raw, y_adj, divs = fetch_yahoo(args.yahoo_cache, args.yahoo_start)
 
     # --- Check 1: audit Alpaca's vendor adjustment (the reason we self-adjust)
     alpaca_events = audit_vendor_adjustment(a_adj, a_raw, divs)
@@ -180,6 +185,16 @@ def main() -> None:
         "pass_max": bool(lvl.max() < LEVEL_BAR_BPS),
     }
 
+    # --- Extension audit (fomc-drift): dividend cadence must be quarterly in
+    # every covered year (~4/yr; first/last calendar years may be partial), and
+    # our factor arithmetic must agree with Yahoo's own adjusted series over the
+    # FULL overlap, not just the 2016-2017 locked window (report-only).
+    div_per_year = divs.groupby(divs.index.year).size()
+    ov_full = spliced.index.intersection(y_adj.index)
+    oc_f, yc_f = spliced.loc[ov_full, "close"], y_adj.loc[ov_full, "close"]
+    yc_f = yc_f * float(oc_f.iloc[0] / yc_f.iloc[0])
+    ret_full = (1e4 * (yc_f.pct_change() - oc_f.pct_change())).abs().dropna()
+
     # --- Check 4: ours vs Alpaca-adjusted after Alpaca's last missing event
     last_bad = max((e["ex_date"] for e in alpaca_bad), default=str(splice_date.date()))
     tail = spliced.loc[pd.Timestamp(last_bad):].index.intersection(a_adj.index)
@@ -192,15 +207,18 @@ def main() -> None:
     out.to_parquet(args.out)
 
     report = {
-        "method": "raw prints (Yahoo < %s, Alpaca SIP after) + uniform CRSP back-adjustment "
-        "from the Yahoo dividend record; vendor adjusted series NOT used" % splice_date.date(),
+        "method": f"raw prints (Yahoo < {splice_date.date()}, Alpaca SIP after) "
+        "+ uniform CRSP back-adjust from the Yahoo dividends; vendor adjusted NOT used",
         "alpaca_files": [str(args.alpaca_adj), str(args.alpaca_raw)],
         "yahoo_cache": str(args.yahoo_cache),
         "spliced_file": str(args.out),
         "splice_date": str(splice_date.date()),
         "spliced_range": [str(spliced.index[0].date()), str(spliced.index[-1].date())],
         "spliced_sessions": int(len(spliced)),
+        "yahoo_start": args.yahoo_start,
         "dividend_events_applied": int(len(divs)),
+        "dividend_events_per_year": {int(y): int(n) for y, n in div_per_year.items()},
+        "self_vs_yahoo_adjusted_daily_return_divergence_full_overlap_bps": div_stats(ret_full),
         "alpaca_vendor_adjustment_audit": {
             "events_checked": len(alpaca_events),
             "bad_events": alpaca_bad,

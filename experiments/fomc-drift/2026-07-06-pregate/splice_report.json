@@ -1,0 +1,133 @@
+{
+  "method": "raw prints (Yahoo < 2016-01-04, Alpaca SIP after) + uniform CRSP back-adjust from the Yahoo dividends; vendor adjusted NOT used",
+  "alpaca_files": [
+    "/Users/williamvonarend/projects/stockProcessor/data/SPY_daily_adj_full.parquet",
+    "/Users/williamvonarend/projects/stockProcessor/data/SPY_daily_raw_full.parquet"
+  ],
+  "yahoo_cache": "/Users/williamvonarend/projects/stockProcessor/data/SPY_yahoo_daily_raw.parquet",
+  "spliced_file": "/Users/williamvonarend/projects/stockProcessor/data/SPY_daily_adj_spliced.parquet",
+  "splice_date": "2016-01-04",
+  "spliced_range": [
+    "1993-06-01",
+    "2026-07-02"
+  ],
+  "spliced_sessions": 8329,
+  "yahoo_start": "1993-06-01",
+  "dividend_events_applied": 134,
+  "dividend_events_per_year": {
+    "1993": 3,
+    "1994": 4,
+    "1995": 4,
+    "1996": 4,
+    "1997": 4,
+    "1998": 4,
+    "1999": 4,
+    "2000": 4,
+    "2001": 4,
+    "2002": 4,
+    "2003": 4,
+    "2004": 5,
+    "2005": 4,
+    "2006": 4,
+    "2007": 4,
+    "2008": 4,
+    "2009": 4,
+    "2010": 4,
+    "2011": 4,
+    "2012": 4,
+    "2013": 4,
+    "2014": 4,
+    "2015": 4,
+    "2016": 4,
+    "2017": 4,
+    "2018": 4,
+    "2019": 4,
+    "2020": 4,
+    "2021": 4,
+    "2022": 4,
+    "2023": 4,
+    "2024": 4,
+    "2025": 4,
+    "2026": 2
+  },
+  "self_vs_yahoo_adjusted_daily_return_divergence_full_overlap_bps": {
+    "mean": 0.535,
+    "p99": 7.121,
+    "max": 268.746,
+    "worst_dates": {
+      "2020-03-13": 268.75,
+      "2020-03-12": 263.61,
+      "2020-03-18": 221.47
+    }
+  },
+  "alpaca_vendor_adjustment_audit": {
+    "events_checked": 42,
+    "bad_events": [
+      {
+        "ex_date": "2016-03-18",
+        "dividend": 1.05,
+        "vendor_step_bps": 0.16,
+        "crsp_step_bps": 51.58,
+        "diff_bps": -51.42,
+        "bad": true
+      },
+      {
+        "ex_date": "2018-06-15",
+        "dividend": 1.246,
+        "vendor_step_bps": 0.03,
+        "crsp_step_bps": 44.91,
+        "diff_bps": -44.88,
+        "bad": true
+      }
+    ],
+    "note": "why the vendor adjusted series was abandoned; every non-bad event's factor also corroborates the Yahoo dividend amounts to <0.5 bps"
+  },
+  "raw_print_divergence_yahoo_vs_sip_bps": {
+    "mean": 1.119,
+    "p99": 8.292,
+    "max": 279.345,
+    "worst_dates": {
+      "2020-03-12": 279.34,
+      "2020-03-18": 182.87,
+      "2020-03-09": 75.64
+    }
+  },
+  "locked_spec_check": {
+    "compared": "self-adjusted splice vs Yahoo-adjusted, 2016-2017, boundary-rescaled",
+    "overlap_sessions": 503,
+    "level_divergence_bps": {
+      "mean": 0.893,
+      "p99": 4.676,
+      "max": 10.819,
+      "worst_dates": {
+        "2016-02-29": 10.82,
+        "2017-08-31": 8.04,
+        "2017-10-26": 5.43
+      }
+    },
+    "daily_return_divergence_bps": {
+      "mean": 1.331,
+      "p99": 6.59,
+      "max": 11.114,
+      "worst_dates": {
+        "2016-03-01": 11.11,
+        "2016-02-29": 10.72,
+        "2017-08-31": 8.13
+      }
+    },
+    "level_bar_bps": 5.0,
+    "pass_mean": true,
+    "pass_max": false
+  },
+  "self_vs_alpaca_adjusted_after_last_bad_event_bps": {
+    "mean": 0.488,
+    "p99": 0.728,
+    "max": 0.766,
+    "worst_dates": {
+      "2020-03-31": 0.77,
+      "2020-03-18": 0.75,
+      "2018-12-31": 0.75
+    }
+  },
+  "git_commit": "80a2326587c3fc367d7f4b6dfdeaf65dd8cdfa7a"
+}

@@ -1,0 +1,151 @@
+{
+  "strategy": "fomc-drift",
+  "gate_scope": "IS ONLY (1994-01-01 -> 2015-12-31). OOS and WF NOT read.",
+  "bars_file": "/Users/williamvonarend/projects/stockProcessor/data/SPY_daily_adj_spliced.parquet",
+  "bars_sha256_16": "0c30b633dc110363",
+  "bars_range_read": [
+    "1993-06-01",
+    "2015-12-31"
+  ],
+  "calendar_file": "/Users/williamvonarend/projects/stockProcessor/strategies/fomc-drift/fomc_calendar.csv",
+  "calendar_sha256_16": "55bb762b0d83ddf3",
+  "params": {
+    "is_window": [
+      "1994-01-01",
+      "2015-12-31"
+    ],
+    "cost_round_trip_bps": 2.0,
+    "cost_bar_bps": 2.0,
+    "reproduction_bar_bps": 20.0
+  },
+  "gate_rule": "REJECT if EDGE(IS) <= 2.0 bps OR EDGE(IS) < 20.0 bps",
+  "n_events": 176,
+  "n_nonevent_days": 5513,
+  "FOMC_IS_mean_gross_bps": 33.499,
+  "BASE_IS_mean_gross_bps": 3.1531,
+  "EDGE_IS_bps": 30.346,
+  "se_per_event_bps": 8.93,
+  "t_event_vs_zero": 3.75,
+  "t_edge_approx": 3.4,
+  "mean_net_bps_per_event": 31.5,
+  "hit_rate_gross": 0.597,
+  "verdict": "PASS pre-scoring gate \u2014 the documented edge reproduces in-sample; proceed to implementation, engine IS cross-check, then ONE OOS look",
+  "diagnostics_NOT_GATES": {
+    "decomposition_mean_bps": {
+      "overnight_close_to_open": 11.86,
+      "intraday_open_to_close": 21.7
+    },
+    "boguth_missed_onset_close_Tm2_to_Tm1_mean_bps": 16.13,
+    "press_conference_split": {
+      "pc": {
+        "n": 20,
+        "mean_gross_bps": 61.89
+      },
+      "non_pc": {
+        "n": 156,
+        "mean_gross_bps": 29.86
+      }
+    },
+    "median_gross_bps": 29.9,
+    "trimmed10_mean_gross_bps": 31.92,
+    "worst_event": {
+      "T": "2011-09-21",
+      "gross_bps": -294.5827552190272
+    },
+    "best_event": {
+      "T": "2008-12-16",
+      "gross_bps": 470.65495765447054
+    },
+    "per_year_gross": {
+      "1994": {
+        "n": 8,
+        "mean_gross_bps": -8.43
+      },
+      "1995": {
+        "n": 8,
+        "mean_gross_bps": 54.99
+      },
+      "1996": {
+        "n": 8,
+        "mean_gross_bps": 29.12
+      },
+      "1997": {
+        "n": 8,
+        "mean_gross_bps": -16.95
+      },
+      "1998": {
+        "n": 8,
+        "mean_gross_bps": 51.31
+      },
+      "1999": {
+        "n": 8,
+        "mean_gross_bps": 59.33
+      },
+      "2000": {
+        "n": 8,
+        "mean_gross_bps": 7.08
+      },
+      "2001": {
+        "n": 8,
+        "mean_gross_bps": -24.27
+      },
+      "2002": {
+        "n": 8,
+        "mean_gross_bps": 14.07
+      },
+      "2003": {
+        "n": 8,
+        "mean_gross_bps": 53.09
+      },
+      "2004": {
+        "n": 8,
+        "mean_gross_bps": 24.93
+      },
+      "2005": {
+        "n": 8,
+        "mean_gross_bps": -4.32
+      },
+      "2006": {
+        "n": 8,
+        "mean_gross_bps": 12.89
+      },
+      "2007": {
+        "n": 8,
+        "mean_gross_bps": 61.06
+      },
+      "2008": {
+        "n": 8,
+        "mean_gross_bps": 145.66
+      },
+      "2009": {
+        "n": 8,
+        "mean_gross_bps": 115.79
+      },
+      "2010": {
+        "n": 8,
+        "mean_gross_bps": 18.38
+      },
+      "2011": {
+        "n": 8,
+        "mean_gross_bps": 21.16
+      },
+      "2012": {
+        "n": 8,
+        "mean_gross_bps": 63.11
+      },
+      "2013": {
+        "n": 8,
+        "mean_gross_bps": 6.1
+      },
+      "2014": {
+        "n": 8,
+        "mean_gross_bps": 18.73
+      },
+      "2015": {
+        "n": 8,
+        "mean_gross_bps": 34.17
+      }
+    }
+  },
+  "git_commit": "80a2326587c3fc367d7f4b6dfdeaf65dd8cdfa7a"
+}

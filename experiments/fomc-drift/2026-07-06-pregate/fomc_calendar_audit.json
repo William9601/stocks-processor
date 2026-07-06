@@ -1,0 +1,69 @@
+{
+  "csv": "/Users/williamvonarend/projects/stockProcessor/strategies/fomc-drift/fomc_calendar.csv",
+  "sources": {
+    "historical_1994_2020": "https://www.federalreserve.gov/monetarypolicy/fomchistorical0.htm (per year)",
+    "calendar_2021_2026": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm"
+  },
+  "rows_total": 309,
+  "scheduled_total": 263,
+  "scheduled_per_year": {
+    "1994": 8,
+    "1995": 8,
+    "1996": 8,
+    "1997": 8,
+    "1998": 8,
+    "1999": 8,
+    "2000": 8,
+    "2001": 8,
+    "2002": 8,
+    "2003": 8,
+    "2004": 8,
+    "2005": 8,
+    "2006": 8,
+    "2007": 8,
+    "2008": 8,
+    "2009": 8,
+    "2010": 8,
+    "2011": 8,
+    "2012": 8,
+    "2013": 8,
+    "2014": 8,
+    "2015": 8,
+    "2016": 8,
+    "2017": 8,
+    "2018": 8,
+    "2019": 8,
+    "2020": 7,
+    "2021": 8,
+    "2022": 8,
+    "2023": 8,
+    "2024": 8,
+    "2025": 8,
+    "2026": 8
+  },
+  "per_year_count_check": "PASS (8/yr; 2020 = 7 held + 1 cancelled, documented; final year partial-by-schedule)",
+  "cancelled": [
+    "2020-03-17 -> 2020-03-18"
+  ],
+  "unscheduled_recorded": {
+    "conference_call": 39,
+    "emergency": 1,
+    "notation_vote": 5
+  },
+  "weekday_of_T_exceptions_manual_verify": [
+    "1994-02-04 Friday",
+    "1995-07-06 Thursday",
+    "2005-06-30 Thursday",
+    "2006-06-29 Thursday",
+    "2007-06-28 Thursday",
+    "2012-09-13 Thursday",
+    "2015-09-17 Thursday",
+    "2018-11-08 Thursday",
+    "2020-11-05 Thursday",
+    "2024-11-07 Thursday"
+  ],
+  "t_minus_1_mapping_errors": [],
+  "t_minus_1_mapping_checked": 259,
+  "monotone_no_overlap": true,
+  "git_commit": "80a2326587c3fc367d7f4b6dfdeaf65dd8cdfa7a"
+}
