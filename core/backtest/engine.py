@@ -73,11 +73,11 @@ class BacktestEngine:
             bar = bars.iloc[i]
             ts = idx[i]
             day = et_index[i].date()
-            if prev_day is not None and day != prev_day:
-                # An MOC order that never met its session-close bar (data gap,
-                # early close) must not fill on a later day's close, and a DAY
-                # (session_only) order must not fill on a later day at all.
-                self.broker.expire_pending(FillTiming.NEXT_CLOSE)
+            day_rolled = prev_day is not None and day != prev_day
+            if day_rolled:
+                # A DAY (session_only) order must not fill on a later day at
+                # all — expire it BEFORE this bar's open, so an intraday entry
+                # stranded by a data gap can never become a next-day fill.
                 self.broker.expire_session_only(ts)
             prev_day = day
 
@@ -86,6 +86,18 @@ class BacktestEngine:
             self.broker.process_open(bar, ts)
             self.broker.check_stops(bar, ts)
             self.broker.process_close(bar, ts, is_session_close=(et_index[i] == closes[day]))
+
+            # A NEXT_CLOSE (MOC) order fills at the close of the FOLLOWING bar
+            # (broker/FillTiming contract). On intraday bars that following bar
+            # is the same session's close; on daily bars it is the next
+            # session's close. Either way the fill happens in process_close
+            # above — so an MOC order that is genuinely stranded (its session's
+            # close bar was missing/an early-close phantom) is only expired
+            # AFTER this bar's process_close failed to fill it, at the day roll.
+            # Expiring before process_close (the old order) silently killed
+            # every daily-bar MOC before it could fill.
+            if day_rolled:
+                self.broker.expire_pending(FillTiming.NEXT_CLOSE)
 
             # 4: point-in-time context (no future rows).
             close_px = float(bar["close"])

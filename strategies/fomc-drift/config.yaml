@@ -1,0 +1,43 @@
+# fomc-drift — locked run configuration. Every value below is pre-registered in
+# SPEC.md (Sign-offs, user 2026-07-06) and immovable. Nothing here is swept.
+
+strategy:
+  path: strategies/fomc-drift
+  params: {}                # fully pre-registered; build() rejects tunables
+                            # (calendar file defaults to the committed CSV)
+
+instrument:
+  symbol: SPY               # LOCKED: single instrument, no fallback
+  bar_minutes: 1440         # daily bars (informational; the feed is daily)
+
+risk:
+  risk_per_trade: 0.005     # R = 0.5% of equity (SPEC sign-off #1)
+  daily_loss_limit_r: 2.0   # house 2*R day lock (binds only on a >2G event move)
+  max_drawdown: 0.05        # 5% kill switch, tighter than house 15% (sign-off #7)
+  halt_on_drawdown: false   # backtest measures the full-window DD the <=6*R
+                            # criterion judges; a mid-simulation halt would
+                            # censor it (halted is still reported). Paper sets true.
+  point_value: 1.0
+  allow_leverage: false     # notional capped at 100% of equity, never renegotiated
+
+costs:                      # two SPY closing-auction (MOC) legs; LOCKED 2.0 bps RT
+  commission_per_unit: 0.0  # Alpaca commission-free
+  half_spread_bps: 0.5      # per side (conservative vs observed ~0.1 bps)
+  slippage_bps: 0.5         # per side (market fills; unused here — both legs MOC)
+  stop_slippage_bps: 1.0    # unused (no stops possible on this book)
+  close_slippage_bps: 0.5   # MOC auction slippage per side -> 1.0 bps/side, 2.0 RT
+
+backtest:
+  starting_cash: 100000.0
+  in_sample:      { start: "1994-01-01", end: "2015-12-31" }   # literature's sample
+  out_of_sample:  { start: "2016-01-01", end: "2024-12-31" }   # post-publication, ONE look
+  walk_forward:   { start: "2025-01-01", end: null }           # UNREAD until OOS verdict
+
+data:
+  # Session-close-stamped SPY daily splice (re-stamped from
+  # data/SPY_daily_adj_spliced.parquet by scripts/build_spy_daily_moc.py so the
+  # engine's MOC path fills on daily bars). Gitignored, rebuildable; record its
+  # sha256 per experiment (house rule 5).
+  source: data/SPY_daily_moc.parquet
+  provider: self-adjusted-splice   # Yahoo pre-2016 / Alpaca SIP after, CRSP back-adjust
+  adjustment: self-adjusted         # NEVER Alpaca adjustment=all unaudited (SPEC Data)
