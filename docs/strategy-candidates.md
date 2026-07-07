@@ -18,6 +18,7 @@ at scale.
 | Market intraday momentum (Gao et al. 2018) | intraday-momentum | REJECTED — effect absent in SPY 2018–2024, negative even gross |
 | RSI(21) midline breakout (user's method) | rsi-5050 | REJECTED at pregate — +0.30 bps gross vs 3.5 bps cost bar |
 | Short-term index mean reversion (RSI(2)) | spx-swing | REJECTED at pregate 2026-07-05 — OOS 2018–2024 edge vs SPY drift −14.6 bps/trade (IS 2005–2017 had it: +30 bps) |
+| Volatility risk premium (short VIX carry) | (research screen #8) | REJECTED at research stage 2026-07-07 — edge real + cheap, but not pre-registrable without a sizing sweep, and the short-vol tail is un-haltable by our infra |
 
 External confirmation of the overnight-drift rejection: NightShares launched ETFs on
 exactly that decomposition in 2022 and closed them within a year — transaction costs
@@ -234,6 +235,83 @@ lookback, skip-month, top-K, rebalance frequency — every publication differs) 
 pre-registration minefield, and the strategy would have maximum overlap with the
 overnight-long paper book (always long equities). Not worth a spec.
 
+### 8. Volatility risk premium (short VIX term-structure carry) — REJECTED at research stage 2026-07-07
+
+Chosen 2026-07-07 as the next candidate — the one anomaly family the funnel's derived
+constraints all seemed to allow: a *structural* deliberate payer (equity hedgers
+overpay for index insurance), multi-day holding that amortizes the cost bar, and an
+instrument set (VIX futures / SVXY-VIXY) we hadn't touched. Killed at the research
+screen, before any spec, on the four criteria pre-registered **before** the evidence was
+read:
+
+1. **Post-2018 persistence** — the term-structure-conditional form must show positive
+   net-of-cost performance in independent tests that include 2018 and after.
+2. **Single pre-registrable rule, no sweep** — one canonical signal must recur across
+   the literature, not results that hinge on which contracts / threshold / sizing.
+3. **Cost bar clears with margin** — all-in cost (spread + expense ratio + roll)
+   quantifiable, with positive net Sharpe in an independent recent test.
+4. **Mechanism intact + tail survivable** — the hedging-overpayment payer still exists
+   *and* the drawdown is survivable under our `halt_on_drawdown` infra.
+
+Scorecard: **2 pass, 2 fail — and the two fails are decisive.**
+
+- **#4 mechanism — STRONG PASS.** Every source agrees the payer is structural and
+  intact: VIX futures are in contango ~80% of the time, generating ~3–7%/month roll
+  yield from "equity hedging imbalances," not a price pattern that gets arbed away
+  ([Simplify](https://www.simplify.us/blog/volatility-premium-harvesting-reimagined),
+  [Quantpedia VRP](https://quantpedia.com/strategies/volatility-risk-premium-effect)).
+  This is the strongest part of the thesis and the reason VRP outranked everything else
+  on the shortlist.
+- **#3 cost bar — PASS, and it does *not* kill the idea (unlike overnight-long).** SVXY
+  bid/ask ~2 bps, expense ratio ~0.95%/yr (~8 bps/month) — trivial against 3–7%/month
+  roll yield at monthly-roll turnover; an independent test (2008–May 2025, 5 bps/trade)
+  reports Sharpe ~1 at 16.3%/yr with ~15% equity correlation
+  ([InvestSnips / ProShares figures](https://investsnips.com/vix-short-term-futures-etf/)).
+  So for once cost is not the assassin.
+- **#2 single rule / no sweep — FAIL (decisive).** There is no canonical rule to
+  pre-register. Contract choice (front-month vs constant-maturity vs Simon-Campasano
+  "nearest with ≥10 days"), threshold (roll > 0.10 pts vs contango ratio vs
+  SPY-realized-minus-implied), holding (5-day vs monthly roll), hedged (E-mini overlay)
+  vs unhedged, **and exposure sizing (50% / 25% / 12.5%, where Simplify names "the sweet
+  spot ~25%" — a chosen point on a three-way sweep)** are all live design axes, and the
+  results depend on them. This is exactly the failure that killed turn-of-month (#5):
+  "no single window to pre-register without an implicit sweep." The Simon-Campasano
+  term-structure trade specifically shows OOS "slightly negative … alpha deteriorating"
+  ([Quantpedia term structure](https://quantpedia.com/strategies/exploiting-term-structure-of-vix-futures)),
+  so the one fully-specified published rule already fails post-sample — the survivors
+  are the swept ones.
+- **#4b tail survivable — FAIL (decisive, and specific to our infra).** The premium is
+  *by construction* payment for catastrophic tail risk: the Financial Analysts Journal's
+  post-mortem is literally titled "Volmageddon and the Failure of Short Volatility
+  Products"
+  ([FAJ 2021](https://www.tandfonline.com/doi/abs/10.1080/0015198X.2021.1913040)). XIV
+  lost >96% and was terminated in hours on 2018-02-05 — an **overnight** VIX gap
+  (17→37) the position could not exit through. Our `halt_on_drawdown` fires on realized
+  MTM drawdown on *daily bars*; it structurally cannot bound an overnight
+  termination-event gap. The tail here is not merely large, it is **un-haltable by the
+  risk infrastructure we have**. Post-2018 survival exists only in reduced-exposure
+  (−25%) + options-tail-hedged form — two overlays that are themselves the sweep of #2,
+  and COVID-2020 was a second near-death with the premium only "normalizing in 2023"
+  ([Quantpedia VRP](https://quantpedia.com/strategies/volatility-risk-premium-effect)).
+
+**Why this rejection is different from the prior nine — and therefore useful.** The
+first nine died of "edge gone" (intraday-momentum, ORB, ToM, FOMC, spx-swing) or "cost
+eats it" (overnight-long, overnight-drift). VRP dies of neither: the edge is real,
+structural, and *cheap to trade*. It dies because (a) it is inseparable from a
+sizing/overlay sweep we cannot honestly pre-register, and (b) its defining tail is one
+our risk system cannot bound. That is a cleaner kill — and it maps the boundary of what
+this lab can hold: not "is there an edge" but "can we pre-register it and can our risk
+infra survive its worst day."
+
+**One adjacent idea, parked (not spec'd now).** The *long*-vol mirror — holding a small
+VIXY sleeve as a **tail-hedge overlay** on an equity book — flips #4b from an
+un-haltable short tail into a bounded long-premium bleed, and would pair naturally with
+the shelved overnight-long QQQ book (long equities overnight, small long-vol hedge). But
+it is an overlay, not a standalone alpha (it *costs* the 60–80%/yr contango decay), it is
+not what we screened, and the overnight-long book is itself shelved on cost. Funnel
+discipline is one candidate at a time; log it and move on. Cost of this screen: under two
+hours, no spec, no code.
+
 ## Recommendation
 
 ~~Resume **spx-swing** (sign-offs → pregate diagnostic → verdict).~~ Done — pregate
@@ -241,11 +319,16 @@ failed, funnel worked as designed. ~~**ORB is next in line via strategy-designer
 Done — pregate passed (the lab's first), then rejected at the OOS engine gate
 2026-07-05. ~~Turn-of-month next~~ — rejected at the research screen 2026-07-06 (see
 #5). Both runner-ups screened the same day: sector-ETF momentum rejected (#7),
-**pre-FOMC announcement drift passed (#6) and is next in line via strategy-designer**,
-with the standard pregate-first pattern and the 2016–2019 dead zone mandatorily inside
-the OOS era. Treat one candidate at a time — the funnel's
-value is cheap, honest rejections, and the scarce resource is out-of-sample looks, not
-ideas.
+**pre-FOMC announcement drift passed (#6)** — implemented, then rejected at the OOS
+engine gate 2026-07-06. **Volatility risk premium (#8) was next and is rejected at the
+research screen 2026-07-07** — the funnel is empty again. VRP is the useful kind of
+kill: not "edge gone" and not "cost eats it" (the first nine failure modes) but "real,
+cheap edge we cannot pre-register without a sizing sweep, with a tail our risk infra
+cannot bound." That maps a boundary — the next candidate should be screened not only for
+edge and cost but for **(a) a single canonical rule that survives without a sweep and
+(b) a worst-day loss our `halt_on_drawdown` can actually stop.** Treat one candidate at
+a time — the funnel's value is cheap, honest rejections, and the scarce resource is
+out-of-sample looks, not ideas.
 
 Data-pipeline follow-up (independent of any strategy): the audits run for the splice
 found Alpaca's `adjustment=all` series missing the 2016-03-18 and 2018-06-15 SPY
