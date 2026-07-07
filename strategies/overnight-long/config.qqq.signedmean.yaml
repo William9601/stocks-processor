@@ -1,0 +1,43 @@
+# STUDY #2 CHARGED COSTS (study #2 charged 5.04 bps RT — OOS window); see experiments/execution-cost-study/2026-07-07-0914-quote-validation/notes.md
+# Overnight-long — QQQ gated, EVIDENCE-BASED costs (execution-cost study re-judgment).
+# Identical to config.qqq.yaml except the costs block; see
+# experiments/execution-cost-study/2026-07-03-2319-spy-qqq-auction/notes.md.
+# Measured QQQ round-trip: 2.90 bps (vs 7 bps locked assumption).
+
+strategy:
+  path: strategies/overnight-long
+  params:
+    decision_offset_minutes: 20   # decision bar closes 20 min before the session close (15:40 full day; Alpaca MOC cutoff ~15:45)
+    use_regime_gate: true
+    sma_window: 200
+    overnight_vol_window: 20
+    gap_vol_mult: 3.0
+    gap_floor: 0.05
+    daily_source: data/QQQ_daily_adj.parquet
+
+instrument:
+  symbol: QQQ
+  bar_minutes: 5
+
+risk:
+  risk_per_trade: 0.005
+  daily_loss_limit_r: 2.0
+  max_drawdown: 0.15
+  point_value: 1.0
+
+costs:                      # EVIDENCE-BASED (measured 2026-07-03, 2018-2026 SIP data)
+  commission_per_unit: 0.0
+  half_spread_bps: 0.0      # auction fills do not cross the book
+  slippage_bps: 0.292      # study#2: MOO open-site quote abs_p75 1.1683 + 0.3 fees      # MOO exit: open-site p75 0.2855 + 0.3 fees (sell side)
+  close_slippage_bps: 0.16  # study#2: MOC close-site quote abs_p75 (conservative, pre-registered)  # MOC entry: close-site p75
+  stop_slippage_bps: 3.0    # unused (no stops)
+
+backtest:
+  starting_cash: 100000.0
+  in_sample:      { start: "2018-01-01", end: "2021-12-31" }
+  out_of_sample:  { start: "2022-01-01", end: "2024-12-31" }
+  walk_forward:   { start: "2025-01-01", end: null }
+
+data:
+  source: data/QQQ_5m_adj.parquet
+  provider: alpaca-sip

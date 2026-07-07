@@ -92,4 +92,65 @@ Regulatory (SEC §31 + FINRA TAF) **0.3 bps round-trip, sell-side**, unchanged f
 
 ## Results (appended after the run; see metrics.json)
 
-_pending — not yet computed._
+Run 2026-07-07, `scripts/measure_auction_costs_v2.py`, QQQ. Quote sample: 120 random
+(40/vintage) + 28 high-gap, 0 fetch failures, 0 pre-open fallbacks.
+
+### Measurement B — fill-reference cost per vintage (QQQ, abs p75 bps)
+| site | IS 2018–21 | OOS 2022–24 | WF 2025+ |
+|------|-----------|-------------|----------|
+| close | **3.07** | 1.91 | 1.44 |
+| open  | 0.54 | 0.23 | 0.18 |
+
+IS-only (the no-lookahead cost applied OOS) = **3.07 / 0.54** → higher than study #1's
+contaminated pooled 2.31/0.29, exactly as the reviewer predicted (2020 close-site noise
+sits in IS). Study #1's flaw confirmed and corrected.
+
+### Measurement A — quote-grounded auction premium (RAW print vs pre-auction NBBO mid)
+| site | signed mean | signed p50 | **abs p75** | abs p90 |
+|------|-------------|-----------|-------------|---------|
+| close | +0.16 | −0.06 | **3.57** | 5.47 |
+| open  | −0.01 | 0.00 | **1.17** | 1.81 |
+
+**Signed means ≈ 0 → the auction print is UNBIASED vs the pre-auction mid** (no systematic
+adverse selection). The dispersion is real but symmetric. High-gap stratum (tail check,
+not charged): close abs p75 3.40, open 1.28 — not much worse than random, i.e. the
+dispersion is not a gap-day artifact.
+
+### Charged cost (locked rule: max of A,B per site; B = IS-only)
+close = max(3.07, 3.57) = **3.57** (A) · open = max(0.54, 1.17) = **1.17** (A) · +0.3 fees
+→ **round-trip 5.04 bps.** Config: `config.qqq.evcost2.yaml` / `config.qqq.wf.evcost2.yaml`.
+
+### Judgment at the charged cost (strategy params UNCHANGED)
+| window | Sharpe | net return | bar ≥0.7 |
+|--------|--------|-----------|----------|
+| OOS 2022–24 | **0.166** | +0.43% | **FAIL** |
+| WF 2025+    | **0.643** | +1.00% | **FAIL** |
+
+`experiments/overnight-long/2026-07-07-0927-study2-charged` (OOS),
+`.../2026-07-07-0928-study2-charged-wf` (WF).
+
+## VERDICT (per the locked rule): FAIL — overnight-long PULLED FROM PAPER
+
+It clears neither the OOS nor the WF ≥0.7 bar at the charged cost. Per the pre-registered
+anti-goalpost clause, overnight-long is pulled from paper and offline iteration stops.
+
+## Honest caveat — the verdict is CONVENTION-DRIVEN, not economics-driven (recorded, does NOT overturn the lock)
+
+The charge is `abs p75` of the print-vs-mid deviation, applied always-adverse. But
+measurement A showed the print is **unbiased** (signed mean +0.16/−0.01 bps): over a
+*repeated* strategy, half those deviations are favorable and the realized expected cost is
+the **signed mean ≈ 0.45 bps RT**, not `abs p75`. Sensitivity at 0.45 bps (NOT the verdict):
+OOS Sharpe **1.01** (net +2.70%), WF **1.55** (net +2.44%) — a strong pass on both.
+
+So the entire rejection rides on a conservative one-shot convention (inherited from study
+#1) that is defensible for the fill-reference *modeling error* but is the WRONG cost model
+for a repeated trade against an unbiased auction print. **Pre-registration lesson for any
+future study: for the quote-premium leg, charge the signed mean (repeated-trade expected
+cost), not `abs p75`.** This is logged, and — per the anti-goalpost clause — is NOT applied
+retroactively to rescue this verdict.
+
+**Consequence:** the offline evidence is genuinely split (conservative convention → reject;
+expected cost → strong pass) and paper cannot fill the auction to break the tie. The ONLY
+clean resolver left is a **tiny real-money live test** (separate, explicit hard-rule
+sign-off; see memory `core-paper-safety-gaps`). This study does not, by itself, kill the
+economic thesis — it kills the *paper/offline* path to validating it.

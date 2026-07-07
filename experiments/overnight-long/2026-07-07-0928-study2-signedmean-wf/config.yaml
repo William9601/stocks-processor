@@ -1,0 +1,43 @@
+strategy:
+  path: strategies/overnight-long
+  params:
+    decision_offset_minutes: 20
+    use_regime_gate: true
+    sma_window: 200
+    overnight_vol_window: 20
+    gap_vol_mult: 3.0
+    gap_floor: 0.05
+    daily_source: data/QQQ_daily_adj_wf.parquet
+instrument:
+  symbol: QQQ
+  bar_minutes: 5
+risk:
+  risk_per_trade: 0.005
+  daily_loss_limit_r: 2.0
+  max_drawdown: 0.15
+  point_value: 1.0
+costs:
+  commission_per_unit: 0.0
+  half_spread_bps: 0.0
+  slippage_bps: 0.292
+  close_slippage_bps: 0.16
+  stop_slippage_bps: 3.0
+backtest:
+  starting_cash: 100000.0
+  in_sample:
+    start: '2018-01-01'
+    end: '2021-12-31'
+  out_of_sample:
+    start: '2022-01-01'
+    end: '2024-12-31'
+  walk_forward:
+    start: '2025-01-01'
+    end: null
+data:
+  source: data/QQQ_5m_adj_wf.parquet
+  provider: alpaca-sip
+provenance:
+  git_commit: 44051dd49382ba20ae370e0796e6f542d3b0ba93
+  sample: walkforward
+  synthetic_data: false
+  run_at: '2026-07-07T09:28:24'
