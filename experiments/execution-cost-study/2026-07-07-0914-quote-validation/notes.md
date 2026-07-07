@@ -154,3 +154,55 @@ expected cost → strong pass) and paper cannot fill the auction to break the ti
 clean resolver left is a **tiny real-money live test** (separate, explicit hard-rule
 sign-off; see memory `core-paper-safety-gaps`). This study does not, by itself, kill the
 economic thesis — it kills the *paper/offline* path to validating it.
+
+> **⚠️ THE TWO PARAGRAPHS ABOVE ARE SUPERSEDED by the post-review addendum below.**
+> The "0.45 bps / strong pass / needs a real-money test" framing did not survive
+> independent quant-review — it was the single most optimistic, contaminated corner
+> and reflected motivated reasoning. Read the addendum for the corrected conclusion.
+
+## Post-review addenda (quant-reviewer 2026-07-07: measurement TRUST-WITH-CAVEATS; verdict TRUST; rescue argument DO-NOT-TRUST)
+
+Independent review verified pre-registration integrity (44051dd method-only precedes
+e9cbebf results, decision rule byte-identical), price basis (raw-vs-raw), cost/side
+mapping (`core/backtest/costs.py:26-34`), and that the FAIL reproduces. It then found:
+
+1. **(MAJOR) The binding charge was NOT judgment-window-clean — the headline "clean by
+   construction" claim is false for the deciding number.** Measurement A bound the charge
+   at both sites (A>B), but A was computed **pooled IS+OOS+WF** (`measure_auction_costs_v2.py`
+   `site(rand,...)`); only B was vintage-split. Recomputed vintage-clean (A IS-only
+   abs_p75): close **5.44**, open 1.13 → **charged RT 6.86 bps** (vs the 5.04 used). The
+   disciplined no-lookahead charge is *higher*, so the FAIL is more decisive, not less.
+2. **(MAJOR) The 0.45 bps "true cost / strong pass" number is falsely precise, outlier-
+   driven, and itself contaminated.** Close signed mean +0.163 ± 0.365 SE, 95% CI
+   [−0.55, +0.88] — indistinguishable from 0 *or* from ~0.9. Dropping one point
+   (2021-02-26, −23.98 bps) moves it to +0.365. Per-vintage close means: IS +0.414,
+   **OOS −0.372**, WF +0.446 — the pooled +0.16 is dragged down by the favorable OOS
+   draw, so charging it to the OOS judgment **leaks OOS data** (the opposite of this
+   study's own discipline). Vintage-clean IS-only signed-mean RT ≈ **0.97 bps, not 0.45**,
+   and even that is noise. The benchmark (mid 10 s pre-print) is near-tautological
+   (MMs converge to the expected auction price), and the close skew is right-tailed on
+   the *buy* side — so the iid-averaging argument understates tail/correlation risk for a
+   long-only regime-clustered overnight book.
+3. **(MINOR) high-gap count = 28 not 30** (`:178-183` increments on setdefault no-ops);
+   cosmetic (high-gap not charged). **(MINOR)** `refs["open"].shift(-1)` (`:161`) is a
+   future-index but used only for stratum selection, not any signal — benign.
+
+**Reviewer's independent defensible cost range: ~1–3 bps, straddling the 3 bps Sharpe≥0.7
+threshold, leaning FAIL — every non-optimistic estimator fails** (vintage-clean B 3.91,
+vintage-clean A 6.86, abs_p75 5.04; only the contaminated pooled signed-mean passes).
+
+**Corrected conclusion (supersedes the caveat above):**
+- **Overnight-long stays PULLED FROM PAPER and is SHELVED.** The verdict is not merely
+  "convention-driven"; under every disciplined, no-lookahead estimator it fails. The
+  rescue argument is rejected.
+- **A real-money micro-test is NOT justified as an edge resolver.** Even at the optimistic
+  0.45 bps, OOS is +2.7% over 3 yrs (~0.9%/yr); the entire P&L sits *inside* the cost
+  confidence interval, value-of-information is low, and it's a thin, well-known overnight-
+  premium/beta play. The only defensible reason to ever touch real money here is to
+  validate the auction-fill **mechanics** paper provably cannot exercise — and only if
+  scoped explicitly as a de-minimis execution-**infrastructure** test behind the hard-rule
+  live sign-off, NOT as a reopening of this strategy. Absent that infra need: shelve.
+- **Pre-registration lessons carried forward:** (a) vintage-split EVERY measurement that
+  can bind the charge, not just the bar leg; (b) for a quote-premium leg, pre-register the
+  signed-mean (repeated-trade expected cost) AND its CI, never a bare abs_p75; (c) a cost
+  estimate whose CI straddles the pass/fail line is "unresolved, leaning fail," not "pass."
