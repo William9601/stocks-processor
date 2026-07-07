@@ -1,0 +1,166 @@
+{
+  "strategy": "keltner-reversal",
+  "bars_file": "data/DIA_3m.parquet",
+  "bars_sha256": "709341918b77ed30bc102da00c2f2795c1b89341a735bbe830dd84e68a4632cc",
+  "htf_file": "data/DIA_15m.parquet",
+  "htf_sha256": "c4c5c3b9df6c0697738da6cfc8ffb918d7af99258468c4e89b7a74a84adf2344",
+  "bars_range": [
+    "2017-12-01 14:33:00+00:00",
+    "2026-07-06 20:00:00+00:00"
+  ],
+  "is_window": [
+    "2018-01-01",
+    "2022-12-31"
+  ],
+  "windows_not_read": "OOS 2023-2024, WF 2025->",
+  "params": {
+    "ema_n": 13,
+    "atr_n": 13,
+    "mult_outer": 2.0,
+    "mult_inner_UNUSED": 1.3,
+    "htf_ema_n": 13,
+    "htf_slope_bars": 3,
+    "tick": 0.01,
+    "pending_bars": 3,
+    "cost_bar_bps": 2.5,
+    "risk_pct": 0.005,
+    "session_reset": "3-min band E/A reset per session; 15-min trend EMA continuous"
+  },
+  "gate": "IS mean gross > 2.5 bps AND > matched trend-direction baseline",
+  "counts": {
+    "sessions_is": 1259,
+    "reversal_bars": 9254,
+    "signals": 1176,
+    "long_signals": 777,
+    "short_signals": 399,
+    "filled": 638,
+    "expired": 538
+  },
+  "trades_per_year": 127.6,
+  "all": {
+    "n": 638,
+    "mean_bps": -0.839,
+    "median_bps": 0.67,
+    "std_bps": 11.2,
+    "t_stat": -1.9,
+    "hit_rate": 0.525
+  },
+  "matched_baseline_bps": 1.905,
+  "edge_vs_baseline_bps": -2.744,
+  "long": {
+    "n": 439,
+    "mean_bps": -1.026,
+    "median_bps": 0.24,
+    "std_bps": 10.4,
+    "t_stat": -2.07,
+    "hit_rate": 0.506
+  },
+  "short": {
+    "n": 199,
+    "mean_bps": -0.427,
+    "median_bps": 1.81,
+    "std_bps": 12.7,
+    "t_stat": -0.48,
+    "hit_rate": 0.568
+  },
+  "by_exit": {
+    "stop": {
+      "n": 235,
+      "mean_bps": -10.516,
+      "median_bps": -7.95,
+      "std_bps": 8.5,
+      "t_stat": -19.07,
+      "hit_rate": 0.0
+    },
+    "target": {
+      "n": 382,
+      "mean_bps": 5.406,
+      "median_bps": 3.79,
+      "std_bps": 7.7,
+      "t_stat": 13.71,
+      "hit_rate": 0.869
+    },
+    "time": {
+      "n": 21,
+      "mean_bps": -6.147,
+      "median_bps": -3.03,
+      "std_bps": 11.1,
+      "t_stat": -2.53,
+      "hit_rate": 0.143
+    }
+  },
+  "by_tod": {
+    "close": {
+      "n": 267,
+      "mean_bps": -1.634,
+      "median_bps": -0.35,
+      "std_bps": 10.7,
+      "t_stat": -2.5,
+      "hit_rate": 0.468
+    },
+    "midday": {
+      "n": 275,
+      "mean_bps": 0.333,
+      "median_bps": 1.8,
+      "std_bps": 9.7,
+      "t_stat": 0.57,
+      "hit_rate": 0.6
+    },
+    "open": {
+      "n": 96,
+      "mean_bps": -1.984,
+      "median_bps": -5.35,
+      "std_bps": 15.4,
+      "t_stat": -1.26,
+      "hit_rate": 0.469
+    }
+  },
+  "by_year": {
+    "2018": {
+      "n": 139,
+      "mean_bps": -1.267
+    },
+    "2019": {
+      "n": 142,
+      "mean_bps": -0.489
+    },
+    "2020": {
+      "n": 134,
+      "mean_bps": -1.576
+    },
+    "2021": {
+      "n": 117,
+      "mean_bps": -0.824
+    },
+    "2022": {
+      "n": 106,
+      "mean_bps": 0.169
+    }
+  },
+  "fill_rate": 0.543,
+  "stop_rate": 0.368,
+  "target_rate": 0.599,
+  "time_exit_rate": 0.033,
+  "median_hold_bars": 1.0,
+  "stop_dist_bps_quartiles": [
+    5.9,
+    8.9,
+    14.9
+  ],
+  "realized_risk_pct_median": 0.089,
+  "notional_cap_binds_frac": 0.98,
+  "worst_trade_R": -1.46,
+  "diagnostic_opposite_band_NOT_SCORED": {
+    "all": {
+      "n": 638,
+      "mean_bps": -0.878,
+      "median_bps": -6.05,
+      "std_bps": 24.7,
+      "t_stat": -0.9,
+      "hit_rate": 0.281
+    },
+    "target_hit_frac": 0.2461
+  },
+  "verdict": "REJECT at spec validation - IS gross edge fails the locked bar (mean gross <= 2.5 bps cost bar; edge vs matched baseline -2.744 bps); no tuning, no parameter/HTF/instrument shopping",
+  "git_commit": "ac4523d0a96f57f9e99202dc2966ecd142154564"
+}
