@@ -1,0 +1,64 @@
+{
+  "strategy": "tsmom",
+  "gate_scope": "IS ONLY (2008-04-01 -> 2016-12-31). OOS (2017-01->2024-12) and WF NOT read.",
+  "data_dir": "/Users/williamvonarend/projects/stockProcessor/data/tsmom",
+  "bars_sha256_16": {
+    "SPY": "29e5448966347880",
+    "EFA": "2c125fcd5b74a78f",
+    "EEM": "4a368394bac79f81",
+    "IEF": "2278d3f60df7cf2f",
+    "TLT": "1007d034d9fac411",
+    "DBC": "385301d77f1e94ee",
+    "GLD": "d4617a28724e0b95",
+    "UUP": "382ef8975120b361"
+  },
+  "rf_file": "/Users/williamvonarend/projects/stockProcessor/strategies/tsmom/rf_13w.csv",
+  "rf_sha256_16": "ef03997d8937af50",
+  "score_range": [
+    "2008-04-01",
+    "2016-12-30"
+  ],
+  "n_days": 2206,
+  "n_months": 105,
+  "params": {
+    "lookback_days": 252,
+    "vol_window": 60,
+    "sigma_target_port": 0.1,
+    "gross_cap": 3.0,
+    "cost_per_side_bps": 2.0,
+    "borrow_annual_bps": 50.0
+  },
+  "gate_rule": "REJECT if EDGE(IS)<=0 OR TSMOM Sharpe<0.30 OR TSMOM worst-SPY-quartile<STATIC",
+  "TSMOM_IS_net_sharpe": 0.258,
+  "STATIC_IS_net_sharpe": 0.65,
+  "EDGE_IS_sharpe": -0.392,
+  "TSMOM_worst_spy_quartile_monthly_pct": 0.17,
+  "STATIC_worst_spy_quartile_monthly_pct": -0.936,
+  "verdict": "REJECT at spec-validation (binding rule frozen in SPEC.md before this ran): EDGE(IS)=-0.392 <= 0 (timing does not beat holding the basket); TSMOM(IS) Sharpe=0.258 < 0.30 standalone bar. No tuning; OOS/WF stay unread; post-mortem in the SPEC.",
+  "diagnostics_NOT_GATES": {
+    "TSMOM_IS_gross_sharpe": 0.305,
+    "TSMOM_ann_return_pct": 2.856,
+    "TSMOM_ann_vol_pct": 11.053,
+    "STATIC_ann_return_pct": 7.029,
+    "TSMOM_corr_to_SPY_monthly": -0.042,
+    "STATIC_corr_to_SPY_monthly": 0.47,
+    "TSMOM_annual_turnover_x": 9.01,
+    "TSMOM_avg_gross_exposure": 1.81,
+    "TSMOM_avg_net_exposure": 0.47,
+    "TSMOM_cost_drag_ann_bps": 18.0,
+    "TSMOM_borrow_drag_ann_bps": 32.9,
+    "TSMOM_max_drawdown_pct": -18.98,
+    "per_year_net_return_pct": {
+      "2008": 5.93,
+      "2009": -8.46,
+      "2010": -0.64,
+      "2011": 8.04,
+      "2012": 5.17,
+      "2013": 21.42,
+      "2014": -6.53,
+      "2015": 11.16,
+      "2016": -12.2
+    }
+  },
+  "git_commit": "3839a6e48b917b52e4ed731639406c06a308dd16"
+}

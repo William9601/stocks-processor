@@ -312,6 +312,81 @@ not what we screened, and the overnight-long book is itself shelved on cost. Fun
 discipline is one candidate at a time; log it and move on. Cost of this screen: under two
 hours, no spec, no code.
 
+### 9. Multi-asset time-series momentum (trend-following) — **PASSED the research screen 2026-07-08**
+
+Chosen 2026-07-08 as the next candidate after the VRP kill emptied the funnel — the
+best structural fit the boundary mapping allows, and the first candidate whose defining
+property *inverts* the tail flaw that killed VRP. Canonical rule: sign of the trailing
+**12-month excess return** sets a long/short position, inverse-vol sized, monthly
+rebalanced, across a diversified basket (equity indices, sovereign bonds, commodities,
+FX) — Moskowitz-Ooi-Pedersen (2012). Four criteria pre-registered and LOCKED before
+scoring (`experiments/tsmom/2026-07-08-research-screen/prereg.md`):
+
+- **#1 Post-2011 persistence — PASS (live caveat).** The 2010s were weak (low-vol,
+  whipsaw, rising cross-asset correlation), but Hurst et al.'s century study is positive
+  every decade including the 2010s and the 28-futures 2005–2024 OOS test is profitable,
+  meeting the locked threshold. Caveat is material and current: SG Trend Index **−20.4%
+  May-2024→May-2025, its 2nd-largest drawdown since 2000**. Logged as the most likely
+  downstream killer (lean-regime OOS Sharpe below bar — the ORB/FOMC death mode).
+- **#2 Single canonical rule, no sweep — PASS.** The 12-month sign is robust across
+  lookbacks/sub-samples and positive for all 58 MOP contracts — genuinely
+  pre-registrable, the exact property ToM (#5) and VRP (#8) lacked.
+- **#3 Benchmark gate restatable for a diversifier — PASS.** "Beat SPY drift" kills
+  equity-only trend as closet beta by construction; the legitimate reframe (adds
+  risk-adjusted return AND negative-crisis-correlation to a SPY book) is what the
+  strategy *is*, not a post-hoc loosening. Governance condition: lock the restated gate
+  before any OOS look (the overnight-long rescue lesson).
+- **#4 Worst-day loss haltable (grind, not gap) — PASS (decisive, inverts VRP).** SG
+  Trend max DD ~20.6%, drawdowns 15–25% over 12–24-month recoveries — slow, vol-scaled,
+  no single-day wipeout because the payoff is *long* convexity. A daily-bar
+  `halt_on_drawdown` can bound it; contrast XIV −96% overnight in hours.
+
+**All four PASS → authorized for multi-asset data infra + a strategy-designer spec.**
+First candidate to clear the research screen (ToM, sector-momentum, VRP all failed it;
+ORB and FOMC passed only the later pregate, then died at the OOS engine gate — so TSMOM's
+real OOS looks are still ahead, not behind). Two logged downstream risks the spec must
+confront: (1) lean-regime OOS Sharpe below bar — the pre-registered OOS window must
+include a lean stretch, no cherry-picking 2022; (2) "diversification beta, not alpha" —
+the benchmark must isolate trend's contribution vs a static multi-asset buy-and-hold, not
+just vs SPY. New data infra: a diversified liquid-ETF proxy basket (SPY/EFA/EEM, IEF/TLT,
+DBC/GLD, UUP), daily, self-adjusted with the audited-splice discipline (the Alpaca
+`adjustment=all` dividend bug applies).
+
+**Progress 2026-07-08:** (1) basket data BUILT + audited (`scripts/build_tsmom_basket.py`,
+common start 2007-03, all audits pass, EEM/EFA split×dividend landmine solved
+empirically; `experiments/tsmom/2026-07-08-basket-build/`). (2) **SPEC approved +
+criteria FROZEN** (`strategies/tsmom/SPEC.md`): long/short 12-month TSMOM, inverse-vol
+(60d) sizing to a 10% portfolio vol target, monthly MOC rebalance, 3× gross cap, 20%
+kill switch. The screen's criterion-3 benchmark restatement is locked as the binding
+gate — the benchmark is the **static always-long basket** (same instruments/sizing), and
+`EDGE = TSMOM Sharpe − STATIC Sharpe` must be > 0 or it is diversification beta not
+trend alpha. IS 2008-03→2016-12 / OOS 2017-01→2024-12 (lean-inclusive) / WF 2025→ sealed.
+Costs 4.0 bps RT + 50 bps/yr borrow (1.5× companion locked). **Next: `scripts/pregate_tsmom.py`,
+IS-only** — REJECT at spec validation if `EDGE(IS) ≤ 0`, IS Sharpe < 0.3, or the timing
+removes crisis convexity. No engine code / no OOS look until the pregate passes.
+
+**Verdict 2026-07-08 — REJECTED at the pregate / spec-validation (10th candidate death).**
+The IS-only pregate (`experiments/tsmom/2026-07-08-pregate/`, IS 2008-04→2016-12, OOS/WF
+hard-sliced out) simulated the long/short book and the STATIC always-long same-basket
+benchmark through identical machinery. **Two of three frozen gates fail:** EDGE(IS) =
+TSMOM 0.258 − STATIC 0.650 = **−0.392 Sharpe** (timing loses to holding the basket), and
+TSMOM IS Sharpe 0.258 < 0.30. The convexity gate PASSED (worst-SPY-quartile +0.17% vs
+STATIC −0.94% — the timing did add crisis protection), but that alone didn't pay for the
+whipsaw. The kill is in **gross return, not costs**: TSMOM gross Sharpe 0.305 is already
+< half STATIC's; borrow+turnover is ~0.5pp of the 4.2pp/yr return gap (TSMOM 2.86%/yr vs
+STATIC 7.03%/yr). Per-year is textbook lost-decade trend: crisis alpha (2008 +5.9%, 2013
++21%) overwhelmed by whipsaw (2009 −8.5%, 2014 −6.5%, 2016 −12%), max DD −19%. **This is
+exactly the "diversification beta not trend alpha" failure the benchmark restatement
+(screen criterion #3) was built to catch** — the book is a genuine diversifier
+(corr-to-SPY −0.04) but the momentum *timing* subtracts risk-adjusted return over just
+holding the risk-balanced basket. No-peek/no-rescue held: OOS (2017-24, incl. the 2022
+revival that might score better) stays sealed; re-slicing the frozen IS window is
+forbidden. The VRP-grade useful kill: real mechanism, haltable tail, convexity present,
+cost not the assassin — dies on the honest common-mode benchmark, at spec-validation,
+one session, no engine code / no OOS look spent. **Infra that survives:** the audited
+multi-asset basket builder (`scripts/build_tsmom_basket.py`, 8 self-adjusted ETFs, the
+lab's first multi-asset universe) + committed `strategies/tsmom/rf_13w.csv`.
+
 ## Recommendation
 
 ~~Resume **spx-swing** (sign-offs → pregate diagnostic → verdict).~~ Done — pregate
@@ -329,6 +404,15 @@ edge and cost but for **(a) a single canonical rule that survives without a swee
 (b) a worst-day loss our `halt_on_drawdown` can actually stop.** Treat one candidate at
 a time — the funnel's value is cheap, honest rejections, and the scarce resource is
 out-of-sample looks, not ideas.
+
+**Update 2026-07-08 — that boundary is exactly what multi-asset TSMOM (#9) was screened
+against, and it PASSED all four criteria (first research-screen pass in the funnel).**
+It is the inverse of VRP: single canonical rule (12-month sign), positive-skew/haltable
+tail, cost-survivable low turnover — weak only on the standalone-return/benchmark axis,
+which reframes honestly as a diversifier gate. Next actions: build the diversified
+liquid-ETF basket (self-adjusted, audited splice) and a strategy-designer spec with the
+benchmark restatement and a lean-inclusive OOS window locked ex-ante. The real OOS looks
+— where ORB and FOMC died — are still ahead.
 
 Data-pipeline follow-up (independent of any strategy): the audits run for the splice
 found Alpaca's `adjustment=all` series missing the 2016-03-18 and 2018-06-15 SPY

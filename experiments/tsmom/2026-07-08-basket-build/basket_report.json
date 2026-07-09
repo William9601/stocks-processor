@@ -1,0 +1,508 @@
+{
+  "purpose": "Diversified daily total-return basket for the TSMOM candidate.",
+  "method": "Yahoo split-adjusted raw Close/OHLC + self CRSP distribution back-adjust (dividends + capital gains, split-basis corrected); audited vs Yahoo Adj Close and vs Alpaca SIP adjustment=all 2016+.",
+  "basket": {
+    "SPY": "equity",
+    "EFA": "equity",
+    "EEM": "equity",
+    "IEF": "bond",
+    "TLT": "bond",
+    "DBC": "commodity",
+    "GLD": "commodity",
+    "UUP": "fx"
+  },
+  "common_start_all_instruments": "2007-03-01",
+  "return_bar_bps": 5.0,
+  "event_bar_bps": 10.0,
+  "instruments": [
+    {
+      "ticker": "SPY",
+      "asset_class": "equity",
+      "range": [
+        "2003-01-02",
+        "2026-07-08"
+      ],
+      "sessions": 5915,
+      "distributions_applied": 95,
+      "splits_applied": {},
+      "out_file": "data/tsmom/SPY_daily_adj.parquet",
+      "sha256": "29e5448966347880df3711044acfd3a87ad5dd0df57e147fd1bd8138bc261658",
+      "audit1_event_steps": {
+        "events_checked": 95,
+        "disputed_events": []
+      },
+      "audit2_self_vs_yahoo_adjclose": {
+        "overlap_sessions": 5915,
+        "level_divergence_bps": {
+          "mean": 0.002,
+          "p99": 0.0053,
+          "max": 0.0084,
+          "worst_dates": {
+            "2005-04-07": 0.008,
+            "2008-12-23": 0.007,
+            "2013-08-08": 0.007
+          }
+        },
+        "daily_return_divergence_bps": {
+          "mean": 0.0017,
+          "p99": 0.0067,
+          "max": 0.0117,
+          "worst_dates": {
+            "2007-10-08": 0.012,
+            "2003-04-14": 0.012,
+            "2003-09-10": 0.012
+          }
+        },
+        "return_bar_bps": 5.0,
+        "pass_max": true
+      },
+      "audit3_cross_vendor_alpaca_2016plus": {
+        "overlap_sessions": 2641,
+        "median_bps": 0.1556,
+        "p99_bps": 12.2958,
+        "max_bps": 268.549,
+        "days_over_25bps": 13,
+        "worst_dates": {
+          "2020-03-13": 268.55,
+          "2020-03-12": 263.49,
+          "2020-03-18": 221.8,
+          "2020-03-19": 184.97,
+          "2020-03-10": 79.9
+        },
+        "median_bar_bps": 2.0,
+        "p99_bar_bps": 25.0,
+        "pass": true,
+        "note": "Alpaca is cross-check only (not in the price path); large days are extreme-vol vendor print noise / Alpaca ex-div handling, not the built series."
+      }
+    },
+    {
+      "ticker": "EFA",
+      "asset_class": "equity",
+      "range": [
+        "2003-01-02",
+        "2026-07-08"
+      ],
+      "sessions": 5915,
+      "distributions_applied": 44,
+      "splits_applied": {
+        "2005-06-09": 3.0
+      },
+      "out_file": "data/tsmom/EFA_daily_adj.parquet",
+      "sha256": "2c125fcd5b74a78f020806a463aee2ad2e350f109f7d88d378c2250c544e3b04",
+      "audit1_event_steps": {
+        "events_checked": 44,
+        "disputed_events": []
+      },
+      "audit2_self_vs_yahoo_adjclose": {
+        "overlap_sessions": 5915,
+        "level_divergence_bps": {
+          "mean": 0.0025,
+          "p99": 0.0054,
+          "max": 0.0077,
+          "worst_dates": {
+            "2010-02-08": 0.008,
+            "2003-06-17": 0.007,
+            "2009-05-13": 0.007
+          }
+        },
+        "daily_return_divergence_bps": {
+          "mean": 0.0013,
+          "p99": 0.005,
+          "max": 0.009,
+          "worst_dates": {
+            "2005-11-04": 0.009,
+            "2003-06-17": 0.008,
+            "2005-07-22": 0.008
+          }
+        },
+        "return_bar_bps": 5.0,
+        "pass_max": true
+      },
+      "audit3_cross_vendor_alpaca_2016plus": {
+        "overlap_sessions": 2641,
+        "median_bps": 0.585,
+        "p99_bps": 6.5714,
+        "max_bps": 216.256,
+        "days_over_25bps": 2,
+        "worst_dates": {
+          "2020-03-17": 216.26,
+          "2020-03-16": 180.74,
+          "2018-12-26": 13.01,
+          "2020-06-30": 11.41,
+          "2018-10-17": 11.37
+        },
+        "median_bar_bps": 2.0,
+        "p99_bar_bps": 25.0,
+        "pass": true,
+        "note": "Alpaca is cross-check only (not in the price path); large days are extreme-vol vendor print noise / Alpaca ex-div handling, not the built series."
+      }
+    },
+    {
+      "ticker": "EEM",
+      "asset_class": "equity",
+      "range": [
+        "2003-04-14",
+        "2026-07-08"
+      ],
+      "sessions": 5845,
+      "distributions_applied": 47,
+      "splits_applied": {
+        "2005-06-09": 3.0,
+        "2008-07-24": 3.0
+      },
+      "out_file": "data/tsmom/EEM_daily_adj.parquet",
+      "sha256": "4a368394bac79f8166eab0859a1ff132ea7f2dbae416eb65ef00d4fa18305b6c",
+      "audit1_event_steps": {
+        "events_checked": 47,
+        "disputed_events": []
+      },
+      "audit2_self_vs_yahoo_adjclose": {
+        "overlap_sessions": 5845,
+        "level_divergence_bps": {
+          "mean": 0.001,
+          "p99": 0.0038,
+          "max": 0.0072,
+          "worst_dates": {
+            "2005-01-28": 0.007,
+            "2011-02-10": 0.006,
+            "2005-08-16": 0.006
+          }
+        },
+        "daily_return_divergence_bps": {
+          "mean": 0.0014,
+          "p99": 0.0054,
+          "max": 0.0079,
+          "worst_dates": {
+            "2005-01-31": 0.008,
+            "2010-09-24": 0.008,
+            "2005-11-28": 0.007
+          }
+        },
+        "return_bar_bps": 5.0,
+        "pass_max": true
+      },
+      "audit3_cross_vendor_alpaca_2016plus": {
+        "overlap_sessions": 2641,
+        "median_bps": 0.9146,
+        "p99_bps": 10.3218,
+        "max_bps": 126.092,
+        "days_over_25bps": 2,
+        "worst_dates": {
+          "2020-03-17": 126.09,
+          "2020-03-16": 104.34,
+          "2020-03-02": 22.1,
+          "2020-02-28": 19.95,
+          "2016-12-02": 18.49
+        },
+        "median_bar_bps": 2.0,
+        "p99_bar_bps": 25.0,
+        "pass": true,
+        "note": "Alpaca is cross-check only (not in the price path); large days are extreme-vol vendor print noise / Alpaca ex-div handling, not the built series."
+      }
+    },
+    {
+      "ticker": "IEF",
+      "asset_class": "bond",
+      "range": [
+        "2003-01-02",
+        "2026-07-08"
+      ],
+      "sessions": 5915,
+      "distributions_applied": 282,
+      "splits_applied": {},
+      "out_file": "data/tsmom/IEF_daily_adj.parquet",
+      "sha256": "2278d3f60df7cf2ff7eedb9737951e2fa86bad5b80509a4e83300e0a857c04d3",
+      "audit1_event_steps": {
+        "events_checked": 282,
+        "disputed_events": []
+      },
+      "audit2_self_vs_yahoo_adjclose": {
+        "overlap_sessions": 5915,
+        "level_divergence_bps": {
+          "mean": 0.0106,
+          "p99": 0.0181,
+          "max": 0.0229,
+          "worst_dates": {
+            "2010-03-01": 0.023,
+            "2010-02-04": 0.022,
+            "2008-12-19": 0.022
+          }
+        },
+        "daily_return_divergence_bps": {
+          "mean": 0.0031,
+          "p99": 0.0125,
+          "max": 0.0198,
+          "worst_dates": {
+            "2010-02-04": 0.02,
+            "2004-04-20": 0.019,
+            "2003-11-21": 0.018
+          }
+        },
+        "return_bar_bps": 5.0,
+        "pass_max": true
+      },
+      "audit3_cross_vendor_alpaca_2016plus": {
+        "overlap_sessions": 2641,
+        "median_bps": 0.3241,
+        "p99_bps": 1.3166,
+        "max_bps": 33.696,
+        "days_over_25bps": 1,
+        "worst_dates": {
+          "2026-06-01": 33.7,
+          "2016-08-01": 13.1,
+          "2016-05-02": 4.94,
+          "2016-05-03": 4.11,
+          "2016-12-21": 3.13
+        },
+        "median_bar_bps": 2.0,
+        "p99_bar_bps": 25.0,
+        "pass": true,
+        "note": "Alpaca is cross-check only (not in the price path); large days are extreme-vol vendor print noise / Alpaca ex-div handling, not the built series."
+      }
+    },
+    {
+      "ticker": "TLT",
+      "asset_class": "bond",
+      "range": [
+        "2003-01-02",
+        "2026-07-08"
+      ],
+      "sessions": 5915,
+      "distributions_applied": 280,
+      "splits_applied": {},
+      "out_file": "data/tsmom/TLT_daily_adj.parquet",
+      "sha256": "1007d034d9fac411af15c375493c7a7b826933fc1cf5d580bea29e44fcff9047",
+      "audit1_event_steps": {
+        "events_checked": 280,
+        "disputed_events": []
+      },
+      "audit2_self_vs_yahoo_adjclose": {
+        "overlap_sessions": 5915,
+        "level_divergence_bps": {
+          "mean": 0.006,
+          "p99": 0.013,
+          "max": 0.0169,
+          "worst_dates": {
+            "2003-01-30": 0.017,
+            "2007-04-26": 0.016,
+            "2006-03-14": 0.016
+          }
+        },
+        "daily_return_divergence_bps": {
+          "mean": 0.0031,
+          "p99": 0.0123,
+          "max": 0.0176,
+          "worst_dates": {
+            "2010-11-10": 0.018,
+            "2008-12-09": 0.017,
+            "2005-07-01": 0.017
+          }
+        },
+        "return_bar_bps": 5.0,
+        "pass_max": true
+      },
+      "audit3_cross_vendor_alpaca_2016plus": {
+        "overlap_sessions": 2641,
+        "median_bps": 0.3018,
+        "p99_bps": 3.2693,
+        "max_bps": 39.69,
+        "days_over_25bps": 1,
+        "worst_dates": {
+          "2026-06-01": 39.69,
+          "2016-08-01": 17.62,
+          "2016-12-02": 12.58,
+          "2016-12-01": 10.49,
+          "2019-05-29": 7.35
+        },
+        "median_bar_bps": 2.0,
+        "p99_bar_bps": 25.0,
+        "pass": true,
+        "note": "Alpaca is cross-check only (not in the price path); large days are extreme-vol vendor print noise / Alpaca ex-div handling, not the built series."
+      }
+    },
+    {
+      "ticker": "DBC",
+      "asset_class": "commodity",
+      "range": [
+        "2006-02-06",
+        "2026-07-08"
+      ],
+      "sessions": 5136,
+      "distributions_applied": 9,
+      "splits_applied": {},
+      "out_file": "data/tsmom/DBC_daily_adj.parquet",
+      "sha256": "385301d77f1e94eec06430358bde85d9971b38bd0c9be2f51f659a8a1173704a",
+      "audit1_event_steps": {
+        "events_checked": 9,
+        "disputed_events": []
+      },
+      "audit2_self_vs_yahoo_adjclose": {
+        "overlap_sessions": 5136,
+        "level_divergence_bps": {
+          "mean": 0.0005,
+          "p99": 0.0015,
+          "max": 0.0022,
+          "worst_dates": {
+            "2006-02-09": 0.002,
+            "2008-06-09": 0.002,
+            "2006-05-04": 0.002
+          }
+        },
+        "daily_return_divergence_bps": {
+          "mean": 0.0006,
+          "p99": 0.0022,
+          "max": 0.0033,
+          "worst_dates": {
+            "2008-03-18": 0.003,
+            "2015-03-03": 0.003,
+            "2018-10-10": 0.003
+          }
+        },
+        "return_bar_bps": 5.0,
+        "pass_max": true
+      },
+      "audit3_cross_vendor_alpaca_2016plus": {
+        "overlap_sessions": 2641,
+        "median_bps": 1.6114,
+        "p99_bps": 6.9402,
+        "max_bps": 139.466,
+        "days_over_25bps": 3,
+        "worst_dates": {
+          "2018-12-26": 139.47,
+          "2020-03-30": 44.17,
+          "2020-03-31": 43.86,
+          "2019-08-12": 18.89,
+          "2019-08-13": 15.9
+        },
+        "median_bar_bps": 2.0,
+        "p99_bar_bps": 25.0,
+        "pass": true,
+        "note": "Alpaca is cross-check only (not in the price path); large days are extreme-vol vendor print noise / Alpaca ex-div handling, not the built series."
+      }
+    },
+    {
+      "ticker": "GLD",
+      "asset_class": "commodity",
+      "range": [
+        "2004-11-18",
+        "2026-07-08"
+      ],
+      "sessions": 5441,
+      "distributions_applied": 0,
+      "splits_applied": {},
+      "out_file": "data/tsmom/GLD_daily_adj.parquet",
+      "sha256": "d4617a28724e0b95638dabd4459964ed9deed6aad659babf4cad397330fef9d2",
+      "audit1_event_steps": {
+        "events_checked": 0,
+        "disputed_events": []
+      },
+      "audit2_self_vs_yahoo_adjclose": {
+        "overlap_sessions": 5441,
+        "level_divergence_bps": {
+          "mean": 0.0,
+          "p99": 0.0,
+          "max": 0.0,
+          "worst_dates": {
+            "2004-11-18": 0.0,
+            "2004-11-19": 0.0,
+            "2004-11-22": 0.0
+          }
+        },
+        "daily_return_divergence_bps": {
+          "mean": 0.0,
+          "p99": 0.0,
+          "max": 0.0,
+          "worst_dates": {
+            "2004-11-19": 0.0,
+            "2004-11-22": 0.0,
+            "2004-11-23": 0.0
+          }
+        },
+        "return_bar_bps": 5.0,
+        "pass_max": true
+      },
+      "audit3_cross_vendor_alpaca_2016plus": {
+        "overlap_sessions": 2641,
+        "median_bps": 0.0003,
+        "p99_bps": 4.9602,
+        "max_bps": 320.973,
+        "days_over_25bps": 4,
+        "worst_dates": {
+          "2020-03-17": 320.97,
+          "2020-03-16": 291.45,
+          "2020-03-12": 172.16,
+          "2020-03-13": 164.13,
+          "2020-03-18": 19.77
+        },
+        "median_bar_bps": 2.0,
+        "p99_bar_bps": 25.0,
+        "pass": true,
+        "note": "Alpaca is cross-check only (not in the price path); large days are extreme-vol vendor print noise / Alpaca ex-div handling, not the built series."
+      }
+    },
+    {
+      "ticker": "UUP",
+      "asset_class": "fx",
+      "range": [
+        "2007-03-01",
+        "2026-07-08"
+      ],
+      "sessions": 4869,
+      "distributions_applied": 9,
+      "splits_applied": {},
+      "out_file": "data/tsmom/UUP_daily_adj.parquet",
+      "sha256": "382ef8975120b3614610ae645086ffaf6cd71b0e22545d2fb9d83b1dbb21dd3f",
+      "audit1_event_steps": {
+        "events_checked": 9,
+        "disputed_events": []
+      },
+      "audit2_self_vs_yahoo_adjclose": {
+        "overlap_sessions": 4869,
+        "level_divergence_bps": {
+          "mean": 0.001,
+          "p99": 0.0024,
+          "max": 0.0027,
+          "worst_dates": {
+            "2010-07-07": 0.003,
+            "2016-05-10": 0.003,
+            "2017-10-05": 0.003
+          }
+        },
+        "daily_return_divergence_bps": {
+          "mean": 0.0006,
+          "p99": 0.0023,
+          "max": 0.004,
+          "worst_dates": {
+            "2014-08-11": 0.004,
+            "2011-07-12": 0.004,
+            "2013-02-05": 0.004
+          }
+        },
+        "return_bar_bps": 5.0,
+        "pass_max": true
+      },
+      "audit3_cross_vendor_alpaca_2016plus": {
+        "overlap_sessions": 2641,
+        "median_bps": 1.16,
+        "p99_bps": 4.197,
+        "max_bps": 7.036,
+        "days_over_25bps": 0,
+        "worst_dates": {
+          "2017-04-13": 7.04,
+          "2017-03-23": 7.01,
+          "2017-09-11": 6.9,
+          "2017-10-26": 6.35,
+          "2016-06-09": 5.89
+        },
+        "median_bar_bps": 2.0,
+        "p99_bar_bps": 25.0,
+        "pass": true,
+        "note": "Alpaca is cross-check only (not in the price path); large days are extreme-vol vendor print noise / Alpaca ex-div handling, not the built series."
+      }
+    }
+  ],
+  "audit2_failures": [],
+  "audit3_failures": [],
+  "audit1_disputed_events": {},
+  "git_commit": "3839a6e48b917b52e4ed731639406c06a308dd16"
+}
