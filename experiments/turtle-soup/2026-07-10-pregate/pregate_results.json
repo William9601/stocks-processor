@@ -1,0 +1,163 @@
+{
+  "strategy": "turtle-soup",
+  "gate_scope": "IS ONLY (2007-04-01 -> 2016-12-31). OOS (2017-01->2024-12)/WF NOT read.",
+  "data_dir": "/Users/williamvonarend/projects/stockProcessor/data/tsmom",
+  "bars_sha256_16": {
+    "DBC": "385301d77f1e94ee",
+    "EEM": "4a368394bac79f81",
+    "EFA": "2c125fcd5b74a78f",
+    "GLD": "d4617a28724e0b95",
+    "IEF": "2278d3f60df7cf2f",
+    "SPY": "29e5448966347880",
+    "TLT": "1007d034d9fac411",
+    "UUP": "382ef8975120b361"
+  },
+  "calendar": [
+    "2007-03-01",
+    "2016-12-30",
+    2479
+  ],
+  "params": {
+    "channel": 20,
+    "sep_min": 4,
+    "tick": 0.01,
+    "hold_sessions": 4,
+    "max_slots": 4,
+    "cost_bar_bps": 5.0,
+    "min_trades": 200,
+    "variant": "plus_one",
+    "entry_validity": "s+1 only",
+    "re_entry": "excluded",
+    "ordering": "locked worst-case"
+  },
+  "gate_rule": "REJECT if mean gross <= 5.0 bps OR EDGE(IS) <= 0 OR n < 200",
+  "n_filled_trades": 399,
+  "IS_mean_gross_bps": -12.404,
+  "IS_t_stat": -1.44,
+  "EDGE_IS_bps": -12.781,
+  "verdict": "REJECT at spec-validation (binding rule frozen in SPEC.md before this ran): IS mean gross -12.404 bps <= 5.0 bps cost bar; EDGE(IS) -12.781 bps <= 0 vs matched drift baseline. No parameter/variant/universe shopping; OOS/WF stay unread; post-mortem in the SPEC.",
+  "flow": {
+    "setups_scored": 860,
+    "both_sides_same_day_skipped": 0,
+    "skipped_instrument_busy": 3,
+    "skipped_no_slot": 5,
+    "skipped_is_boundary": 0,
+    "orders_armed": 852,
+    "orders_unfilled": 453,
+    "open_at_is_end": 0,
+    "avg_concurrent_positions": 0.254,
+    "max_concurrent_positions": 3
+  },
+  "diagnostics_NOT_GATES": {
+    "hit_rate": 0.313,
+    "median_gross_bps": -37.16,
+    "by_exit_type": {
+      "stop": {
+        "n": 63,
+        "mean_gross_bps": -102.731
+      },
+      "stop_gap": {
+        "n": 45,
+        "mean_gross_bps": -128.47
+      },
+      "stop_samebar": {
+        "n": 138,
+        "mean_gross_bps": -69.898
+      },
+      "time_moc": {
+        "n": 153,
+        "mean_gross_bps": 110.783
+      }
+    },
+    "by_side": {
+      "long": {
+        "n": 204,
+        "mean_gross_bps": -7.531
+      },
+      "short": {
+        "n": 195,
+        "mean_gross_bps": -17.503
+      }
+    },
+    "by_instrument": {
+      "DBC": {
+        "n": 42,
+        "mean_gross_bps": -37.655
+      },
+      "EEM": {
+        "n": 56,
+        "mean_gross_bps": -1.644
+      },
+      "EFA": {
+        "n": 56,
+        "mean_gross_bps": -33.02
+      },
+      "GLD": {
+        "n": 44,
+        "mean_gross_bps": 3.998
+      },
+      "IEF": {
+        "n": 51,
+        "mean_gross_bps": -5.05
+      },
+      "SPY": {
+        "n": 52,
+        "mean_gross_bps": -41.117
+      },
+      "TLT": {
+        "n": 49,
+        "mean_gross_bps": 15.386
+      },
+      "UUP": {
+        "n": 49,
+        "mean_gross_bps": 0.8
+      }
+    },
+    "by_asset_class": {
+      "bond": {
+        "n": 100,
+        "mean_gross_bps": 4.964
+      },
+      "commodity": {
+        "n": 86,
+        "mean_gross_bps": -16.344
+      },
+      "dollar": {
+        "n": 49,
+        "mean_gross_bps": 0.8
+      },
+      "equity": {
+        "n": 164,
+        "mean_gross_bps": -24.874
+      }
+    },
+    "by_year_mean_gross_bps": {
+      "2007": 39.614,
+      "2008": -23.303,
+      "2009": -61.127,
+      "2010": -44.741,
+      "2011": -30.721,
+      "2012": -10.583,
+      "2013": -4.987,
+      "2014": 6.31,
+      "2015": -6.017,
+      "2016": 12.052
+    },
+    "hold_mark_curve_bps_ignoring_stop": {
+      "1": -2.201,
+      "2": -11.669,
+      "3": -7.559,
+      "4": -1.508,
+      "5": -0.73,
+      "6": -3.767
+    },
+    "median_risk_bps": 66.545,
+    "median_penetration_bps": 47.893,
+    "worst_trade_bps": -600.359,
+    "worst_trade_r": -4.0,
+    "max_consecutive_losses": 14,
+    "entry_fill_rate": 0.468,
+    "mean_hold_sessions": 1.58
+  },
+  "git_commit": "db05fb78fef65540c4221c78fc3c365a281bb2b1"
+}

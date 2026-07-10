@@ -1,6 +1,6 @@
 # Strategy: turtle-soup
 
-- **Status**: approved (FROZEN 2026-07-10 — all 12 open questions resolved to recommended defaults; success criteria locked)
+- **Status**: **REJECTED at pregate (spec-validation), 2026-07-10** — IS-only, gross-negative; see Post-mortem. Frozen same day (all 12 open questions resolved to recommended defaults); success criteria locked before the pregate script existed; OOS/WF never read.
 - **Created**: 2026-07-10
 - **One-liner**: Fade false Donchian-channel breakouts (Raschke/Connors "Turtle Soup") — enter counter-trend when a 20-day high/low breakout fails, betting the breakout was stop-hunting fuel rather than trend initiation.
 
@@ -475,7 +475,61 @@ decision record; every "Recommend" reads as "Frozen."
 
 **Next step per the funnel (criteria now frozen):** small data-verification cell →
 `scripts/pregate_turtle_soup.py` on the IS window only, outside the engine; OOS and
-WF stay sealed. Expected outcome per the lab's base
+WF stay sealed.
+
+## Post-mortem — REJECTED at pregate, 2026-07-10 (11th candidate death)
+
+Run: `scripts/pregate_turtle_soup.py` on IS 2007-04 → 2016-12 only (OOS/WF hard-sliced
+out before any computation, never read). Results + trade log in
+`experiments/turtle-soup/2026-07-10-pregate/`. Git at run: db05fb7 (spec frozen first).
+
+**Gate outcome (rule locked before the script existed):**
+
+| Gate | Bar | Result | Verdict |
+|---|---|---|---|
+| 1. IS mean gross/trade | > 5.0 bps | **−12.40 bps** (t = −1.44) | **FAIL** |
+| 2. EDGE(IS) vs matched drift baseline | > 0 | **−12.78 bps** | **FAIL** |
+| 3. IS filled trades | ≥ 200 | 399 | pass |
+
+**Failure mode: the pre-named keltner mode, on cue.** 62% of fills die on the stop
+(same-bar −70, later-touch −103, overnight gap −128 bps means); the 38% that reach the
+4-session MOC average +111 bps — but the stop tail owns the mean. Median trade −37 bps,
+hit rate 31%, max 14 consecutive losses.
+
+**The deeper kill — there is no signal, not just bad stop geometry.** The hold-day mark
+curve *ignoring the stop entirely* is negative at every horizon 1–6 (−0.7 … −11.7 bps):
+after a Plus-One failed breakout in this universe, no multi-day reversion drift exists
+for any exit inside the published 2–6 window. The tight stop doesn't ruin a good
+signal; it truncates a non-signal. EDGE ≈ mean gross because the matched drift
+baselines are ~0.4 bps — conditioning on the failed breakout adds nothing over
+unconditional same-direction exposure.
+
+**Robust to intrabar ordering — in both directions.** The diagnostic-only
+optimistic-ordering ceiling (spanning entry bars survive; physically unattainable)
+scores **−13.1 bps, slightly worse**: trades that dodge the same-bar stop mostly gap
+through it overnight instead (stop-gap fills 45 → 117, mean −154 bps). The locked
+worst-case rule was not what killed it.
+
+**Splits (diagnostics only — the no-rescue clause binds):** both sides negative (long
+−7.5 / short −17.5 bps); equities worst (−24.9), bonds +5.0 on n=100 (noise); every
+year 2008–2013 negative, 2007/2014/2016 mildly positive — no live sub-edge anywhere,
+and reading one in would be forbidden regardless.
+
+**Reading:** consistent with the adversarial prior stated above — 30 years
+post-publication, both sides of the trade crowded, daily mean reversion on liquid US
+ETFs dead in-house (now 0-for-4 as a family: rsi-5050, keltner-reversal, orb's long
+side, turtle-soup). Cost of this death: one session, zero engine code.
+
+**Data-verification finding (recorded for future basket consumers):** the tsmom
+parquets carry full non-null OHLC (pass, hashes in the results JSON) but are
+midnight-ET date-stamped, **not** session-close stamped — irrelevant to this pregate
+(pure date indexing) but the engine's daily-MOC path would have required the fomc-mode
+re-stamp had this survived.
+
+**Infrastructure that survives:** `scripts/pregate_turtle_soup.py` — the lab's first
+multi-instrument stop-order/position/slot simulator on daily bars (setup → armed
+order → gap-aware stop fills → worst-case ordering → concurrency cap), reusable for
+any future order-driven daily-bar pregate. Expected outcome per the lab's base
 rate (11 candidates, 10 deaths, adjacent families 0-for-3): rejection at the cost bar
 or the matched-baseline gate — a fine outcome that costs one session and no engine
 code.

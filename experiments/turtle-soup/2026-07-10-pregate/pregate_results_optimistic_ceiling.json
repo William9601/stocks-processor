@@ -1,0 +1,160 @@
+{
+  "strategy": "turtle-soup",
+  "gate_scope": "IS ONLY (2007-04-01 -> 2016-12-31). OOS (2017-01->2024-12)/WF NOT read.",
+  "data_dir": "/Users/williamvonarend/projects/stockProcessor/data/tsmom",
+  "bars_sha256_16": {
+    "DBC": "385301d77f1e94ee",
+    "EEM": "4a368394bac79f81",
+    "EFA": "2c125fcd5b74a78f",
+    "GLD": "d4617a28724e0b95",
+    "IEF": "2278d3f60df7cf2f",
+    "SPY": "29e5448966347880",
+    "TLT": "1007d034d9fac411",
+    "UUP": "382ef8975120b361"
+  },
+  "calendar": [
+    "2007-03-01",
+    "2016-12-30",
+    2479
+  ],
+  "params": {
+    "channel": 20,
+    "sep_min": 4,
+    "tick": 0.01,
+    "hold_sessions": 4,
+    "max_slots": 4,
+    "cost_bar_bps": 5.0,
+    "min_trades": 200,
+    "variant": "plus_one",
+    "entry_validity": "s+1 only",
+    "re_entry": "excluded",
+    "ordering": "locked worst-case"
+  },
+  "gate_rule": "REJECT if mean gross <= 5.0 bps OR EDGE(IS) <= 0 OR n < 200",
+  "n_filled_trades": 399,
+  "IS_mean_gross_bps": -13.12,
+  "IS_t_stat": -1.26,
+  "EDGE_IS_bps": -13.548,
+  "verdict": "REJECT at spec-validation (binding rule frozen in SPEC.md before this ran): IS mean gross -13.120 bps <= 5.0 bps cost bar; EDGE(IS) -13.548 bps <= 0 vs matched drift baseline. No parameter/variant/universe shopping; OOS/WF stay unread; post-mortem in the SPEC.",
+  "flow": {
+    "setups_scored": 860,
+    "both_sides_same_day_skipped": 0,
+    "skipped_instrument_busy": 3,
+    "skipped_no_slot": 6,
+    "skipped_is_boundary": 0,
+    "orders_armed": 851,
+    "orders_unfilled": 452,
+    "open_at_is_end": 0,
+    "avg_concurrent_positions": 0.346,
+    "max_concurrent_positions": 4
+  },
+  "diagnostics_NOT_GATES": {
+    "hit_rate": 0.373,
+    "median_gross_bps": -37.146,
+    "by_exit_type": {
+      "stop": {
+        "n": 85,
+        "mean_gross_bps": -89.442
+      },
+      "stop_gap": {
+        "n": 117,
+        "mean_gross_bps": -154.074
+      },
+      "time_moc": {
+        "n": 197,
+        "mean_gross_bps": 103.526
+      }
+    },
+    "by_side": {
+      "long": {
+        "n": 204,
+        "mean_gross_bps": -3.971
+      },
+      "short": {
+        "n": 195,
+        "mean_gross_bps": -22.69
+      }
+    },
+    "by_instrument": {
+      "DBC": {
+        "n": 42,
+        "mean_gross_bps": -40.907
+      },
+      "EEM": {
+        "n": 56,
+        "mean_gross_bps": -5.932
+      },
+      "EFA": {
+        "n": 56,
+        "mean_gross_bps": -39.031
+      },
+      "GLD": {
+        "n": 44,
+        "mean_gross_bps": -13.945
+      },
+      "IEF": {
+        "n": 51,
+        "mean_gross_bps": -8.873
+      },
+      "SPY": {
+        "n": 52,
+        "mean_gross_bps": -25.174
+      },
+      "TLT": {
+        "n": 49,
+        "mean_gross_bps": 25.019
+      },
+      "UUP": {
+        "n": 49,
+        "mean_gross_bps": 3.071
+      }
+    },
+    "by_asset_class": {
+      "bond": {
+        "n": 100,
+        "mean_gross_bps": 7.734
+      },
+      "commodity": {
+        "n": 86,
+        "mean_gross_bps": -27.112
+      },
+      "dollar": {
+        "n": 49,
+        "mean_gross_bps": 3.071
+      },
+      "equity": {
+        "n": 164,
+        "mean_gross_bps": -23.335
+      }
+    },
+    "by_year_mean_gross_bps": {
+      "2007": 48.162,
+      "2008": -92.994,
+      "2009": -26.772,
+      "2010": -68.17,
+      "2011": -11.573,
+      "2012": 1.79,
+      "2013": 12.615,
+      "2014": 7.806,
+      "2015": -14.243,
+      "2016": 9.592
+    },
+    "hold_mark_curve_bps_ignoring_stop": {
+      "1": -2.201,
+      "2": -11.669,
+      "3": -7.559,
+      "4": -1.508,
+      "5": -0.73,
+      "6": -3.767
+    },
+    "median_risk_bps": 66.545,
+    "median_penetration_bps": 47.893,
+    "worst_trade_bps": -1291.681,
+    "worst_trade_r": -6.268,
+    "max_consecutive_losses": 12,
+    "entry_fill_rate": 0.469,
+    "mean_hold_sessions": 2.15
+  },
+  "git_commit": "db05fb78fef65540c4221c78fc3c365a281bb2b1",
+  "DIAGNOSTIC_ONLY": "Optimistic-ordering ceiling \u2014 physically unattainable; the locked worst-case run is the gate. This output can never overturn a verdict."
+}
