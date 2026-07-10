@@ -419,6 +419,41 @@ Revisit trigger logged in the screen notes: ≥12 months of post-SCOTUS discount
 AND a confirmed auditable NAV source (including dead funds). Cost of screen: one
 session, no spec, no code.
 
+### 11. Insider cluster buying (insider-cluster) — REJECTED at research stage 2026-07-10
+
+Next-on-deck after cef-discount; first single-name, event/information candidate.
+Criteria pre-registered before evidence
+(`experiments/insider-cluster/2026-07-10-research-screen/prereg.md`) — all three
+prereg-stated risks materialized. Scorecard **2 PASS / 4 FAIL, #2 and #4 decisive**:
+
+- **FAIL #2 canonical rule (decisive)** — the modern literature itself abandoned the
+  simple rule: Heckmann-Jacobs-Schwarz 2025 (SSRN 4537187; 3.7M transactions) find "no
+  single indicator dominated" — the surviving signal is a fitted composite of role,
+  size, clustering, R&D context, and per-insider historical accuracy
+  (Blonien-Crane-Crotty 2023: signal lives at the *insider* level). A frozen "N
+  insiders in W days" cluster rule is the dominated single-characteristic filter the
+  literature explicitly warns against. CMP-2012 opportunistic/routine is 1986–2007 data.
+- **FAIL #4 moat (decisive)** — the harvestable-after-filing residual is latency-arbed:
+  Ozlen-Batumoglu 2026 (SSRN 5966834) find **70–80% of the return occurs between
+  transaction and public filing**; Blonien et al. find impounding "more quickly in
+  recent years"; Jiang-Martin-Yin 2025 find the SOX 2-day speedup *increased insiders'*
+  profits via coordination — the follower's queue position got worse, not better.
+- **FAIL #1 persistence + FAIL #3 costs (both mixed → locked default)** — post-2015
+  alphas exist only equal-weighted/small-cap/short-horizon/gross (the cost-trap
+  configuration); no frozen-rule net-of-cost 2015+ test found; the post-filing residual
+  (~20–30 bps/mo of a 1%/mo EW alpha) sits inside small-cap spread costs.
+- **PASS #5 tail** (diversified long small-cap book = haltable grind) and **PASS #6
+  data — a reusable finding:** EDGAR Form 4 is free/bulk/2003+ incl. dead companies,
+  and survivorship-free US prices *with delisted stocks* are retail-priced (Norgate
+  ~$630/yr, Sharadar alternative). **Single-name universes are now known-feasible for
+  the lab**; the cef-discount data-kill does not generalize to equities.
+
+New screen heuristic from this kill: for any follower/mimicry candidate (insiders,
+13F cloning, congressional trades), first ask **where we sit in the disclosure latency
+queue** — if the return accrues before or at the filing, daily-cadence retail is
+structurally last. Revisit only if someone demonstrates post-filing harvestable alpha
+for a frozen simple rule, net of costs, timed from the filing timestamp.
+
 ## Recommendation
 
 ~~Resume **spx-swing** (sign-offs → pregate diagnostic → verdict).~~ Done — pregate
@@ -455,6 +490,14 @@ risk = cluster-definition sweep) and spinoff forced-selling (structural payer = 
 funds that must sell; known risks = event-data sourcing and mixed post-2010 evidence).
 Both should be pre-registered against the full six-criterion screen including data
 feasibility before any evidence is read.
+
+**Update 2026-07-10 (later) — insider-cluster (#11) REJECTED at the research screen**
+(composite-not-rule + disclosure-latency queue; see entry above). Funnel empty again.
+Remaining next-on-deck: **spinoff forced-selling** — now more testable than when first
+logged, since #11's screen established that survivorship-free single-name data is
+retail-feasible (Norgate). Its screen must confront: (a) event-list sourcing at retail
+cost, (b) mixed post-2010 evidence, (c) the latency-queue question (spinoff selling
+pressure is spread over weeks, not a filing-timestamp race — argue it, don't assume it).
 
 Data-pipeline follow-up (independent of any strategy): the audits run for the splice
 found Alpaca's `adjustment=all` series missing the 2016-03-18 and 2018-06-15 SPY
