@@ -387,6 +387,38 @@ one session, no engine code / no OOS look spent. **Infra that survives:** the au
 multi-asset basket builder (`scripts/build_tsmom_basket.py`, 8 self-adjusted ETFs, the
 lab's first multi-asset universe) + committed `strategies/tsmom/rf_13w.csv`.
 
+### 10. Closed-end fund discount reversion (cef-discount) — REJECTED at research stage 2026-07-10
+
+Chosen 2026-07-10 after the criteria audit added a "right to the edge" screen question —
+CEFs answer it by construction (no creation/redemption arb, vehicles too small for
+institutional scale). Criteria pre-registered before evidence
+(`experiments/cef-discount/2026-07-10-research-screen/prereg.md`); scorecard **3 PASS /
+3 FAIL, two fails structural**:
+
+- **PASS #2 canonical rule** — monthly sort on current discount, long widest quintile
+  (Thompson 1978 / Pontiff 1995); best academic test Patro-Piccotti-Wu (SSRN 2468061):
+  377 CEFs 1984–2011, L/S 17.3%/yr, 5-factor alpha 17.4%, turnover ~2.9×/yr. Unlike
+  ToM/VRP, variants agree on the signal.
+- **PASS #3 cost bar** (at documented magnitude) and **PASS #5 haltable tail** (2020
+  blow-out 8.6%→21.6% was a multi-week grind that recovered by April; no termination
+  gaps).
+- **FAIL #1 persistence** — strongest test ends Dec 2011; no rigorous post-2015 frozen
+  rule test found; activist harvesting compressed discounts ~10–13% → ~6–9%
+  (regime-changing per the locked clause); unresolved-leaning-fail.
+- **FAIL #4 mechanism/moat (decisive)** — the trade was industrialized (Saba: 329 CEF
+  positions, $3.66B) and the 2026-06-11 Supreme Court ruling limiting CEF activism just
+  ended that regime — removing the convergence *catalyst* and leaving a 4-week-old
+  regime with no data to pre-register against, in either direction.
+- **FAIL #6 data (decisive)** — no audit-grade NAV history at retail cost: academic
+  sources are CRSP+Bloomberg, CEFData/Nasdaq-CEFUR are paid, and free CEF Connect
+  covers live funds only → any buildable universe is survivor-biased by construction,
+  which inflates a reversion backtest. First data-feasibility kill in the funnel; the
+  criterion added by the 2026-07-10 criteria audit bit on first use.
+
+Revisit trigger logged in the screen notes: ≥12 months of post-SCOTUS discount data
+AND a confirmed auditable NAV source (including dead funds). Cost of screen: one
+session, no spec, no code.
+
 ## Recommendation
 
 ~~Resume **spx-swing** (sign-offs → pregate diagnostic → verdict).~~ Done — pregate
@@ -413,6 +445,16 @@ which reframes honestly as a diversifier gate. Next actions: build the diversifi
 liquid-ETF basket (self-adjusted, audited splice) and a strategy-designer spec with the
 benchmark restatement and a lean-inclusive OOS window locked ex-ante. The real OOS looks
 — where ORB and FOMC died — are still ahead.
+
+**Update 2026-07-10 — TSMOM (#9) was rejected at the pregate (timing is diversification
+beta, not trend alpha), turtle-soup rejected at pregate the same week, and cef-discount
+(#10) rejected at the research screen** — first kill on data-feasibility + regime-change
+grounds rather than edge/cost. Funnel is empty. Next-on-deck families, unscreened:
+insider cluster buying (free EDGAR Form 4 data, capacity-constrained small-caps; known
+risk = cluster-definition sweep) and spinoff forced-selling (structural payer = index
+funds that must sell; known risks = event-data sourcing and mixed post-2010 evidence).
+Both should be pre-registered against the full six-criterion screen including data
+feasibility before any evidence is read.
 
 Data-pipeline follow-up (independent of any strategy): the audits run for the splice
 found Alpaca's `adjustment=all` series missing the 2016-03-18 and 2018-06-15 SPY
