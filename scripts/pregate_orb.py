@@ -47,6 +47,17 @@ RISK_PCT = 0.005  # R = 0.5% of equity, notional capped at 100% (realized-R diag
 IS_START, IS_END = "2018-01-01", "2022-12-31"  # OOS/WF not read
 
 
+def _maybe_filter(bars, enabled: bool, label: str = "bars"):
+    """Drop phantom post-close half-day bars when --filter-sessions is passed."""
+    if not enabled:
+        return bars
+    from core.data.calendar import filter_to_sessions
+
+    kept = filter_to_sessions(bars)
+    print(f"  [filter_to_sessions] {label}: dropped {len(bars) - len(kept)} phantom bar(s)")
+    return kept
+
+
 def simulate(bars: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
     et_idx = bars.index.tz_convert(ET)
     dates = np.array([t.date() for t in et_idx])
@@ -159,9 +170,10 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--bars", type=Path, default=REPO / "data/QQQ_5m_adj.parquet")
     ap.add_argument("--out", type=Path, required=True)
+    ap.add_argument("--filter-sessions", action="store_true", help="drop phantom bars stamped after a half-day's official 13:00 close (core.data.calendar.filter_to_sessions). Default OFF so the recorded result reproduces byte-for-byte; see experiments/data-audits/2026-08-30-phantom-half-day-bars/.")
     args = ap.parse_args()
 
-    bars = pd.read_parquet(args.bars)
+    bars = _maybe_filter(pd.read_parquet(args.bars), args.filter_sessions)
     df, counts = simulate(bars)
 
     mean_gross = float(df["gross_bps"].mean())

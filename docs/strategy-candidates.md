@@ -19,6 +19,7 @@ at scale.
 | RSI(21) midline breakout (user's method) | rsi-5050 | REJECTED at pregate — +0.30 bps gross vs 3.5 bps cost bar |
 | Short-term index mean reversion (RSI(2)) | spx-swing | REJECTED at pregate 2026-07-05 — OOS 2018–2024 edge vs SPY drift −14.6 bps/trade (IS 2005–2017 had it: +30 bps) |
 | Volatility risk premium (short VIX carry) | (research screen #8) | REJECTED at research stage 2026-07-07 — edge real + cheap, but not pre-registrable without a sizing sweep, and the short-vol tail is un-haltable by our infra |
+| Discretionary overlay on rsi-5050 (LLM veto layer) | rsi-5050-brain | REJECTED at Phase 0 2026-08-30 — mixture is not separable ex ante: CV mean gross of selected +0.007 bps vs 2.0 bar; EOD precision lifted 1.56x but the EOD label is partly a clock (corr(minutes_since_open, hold_bars) = -0.971). No LLM arm built; OOS/WF unspent |
 
 External confirmation of the overnight-drift rejection: NightShares launched ETFs on
 exactly that decomposition in 2022 and closed them within a year — transaction costs

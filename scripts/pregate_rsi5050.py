@@ -46,6 +46,17 @@ ARM_CUTOFF_BEFORE_CLOSE = pd.Timedelta(minutes=30)  # 15:30 on a 16:00 day
 ROUND_TRIP_COST_BPS = 3.5  # modeled cost the gross edge must clear
 
 
+def _maybe_filter(bars, enabled: bool, label: str = "bars"):
+    """Drop phantom post-close half-day bars when --filter-sessions is passed."""
+    if not enabled:
+        return bars
+    from core.data.calendar import filter_to_sessions
+
+    kept = filter_to_sessions(bars)
+    print(f"  [filter_to_sessions] {label}: dropped {len(bars) - len(kept)} phantom bar(s)")
+    return kept
+
+
 def wilder(values: np.ndarray, n: int) -> np.ndarray:
     """Wilder smoothing: seed = simple mean of the first n values, then
     out[i] = (out[i-1]*(n-1) + values[i]) / n. NaN before the seed."""
@@ -90,8 +101,9 @@ def true_range(o, h, l, c, first_of_session: np.ndarray) -> np.ndarray:
     return tr
 
 
-def run(bars_path: Path, label: str, is_start: str, is_end: str) -> dict:
-    bars = pd.read_parquet(bars_path)
+def run(bars_path: Path, label: str, is_start: str, is_end: str,
+        filter_sessions: bool = False) -> dict:
+    bars = _maybe_filter(pd.read_parquet(bars_path), filter_sessions)
     idx_et = bars.index.tz_convert(ET)
     o = bars["open"].to_numpy(float)
     h = bars["high"].to_numpy(float)
@@ -268,9 +280,13 @@ def main() -> None:
     ap.add_argument("--is-start", default="2018-01-01")
     ap.add_argument("--is-end", default="2021-12-31")
     ap.add_argument("--out", type=Path, required=True)
+    ap.add_argument("--filter-sessions", action="store_true", help="drop phantom bars stamped after a half-day's official 13:00 close (core.data.calendar.filter_to_sessions). Default OFF so the recorded result reproduces byte-for-byte; see experiments/data-audits/2026-08-30-phantom-half-day-bars/.")
     args = ap.parse_args()
 
-    result = run(args.bars, args.label, args.is_start, args.is_end)
+    result = run(args.bars, args.label, args.is_start, args.is_end,
+                 filter_sessions=args.filter_sessions)
+    if args.filter_sessions:
+        result["filter_sessions"] = True
     args.out.mkdir(parents=True, exist_ok=True)
     out_file = args.out / f"results_{args.label}.json"
     out_file.write_text(json.dumps(result, indent=2) + "\n")

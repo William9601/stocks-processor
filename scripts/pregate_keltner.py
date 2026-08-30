@@ -90,6 +90,17 @@ RISK_PCT = 0.005      # R = 0.5% of equity, 100% notional cap (realized-R diag)
 IS_START, IS_END = "2018-01-01", "2022-12-31"  # OOS/WF not read
 
 
+def _maybe_filter(bars, enabled: bool, label: str = "bars"):
+    """Drop phantom post-close half-day bars when --filter-sessions is passed."""
+    if not enabled:
+        return bars
+    from core.data.calendar import filter_to_sessions
+
+    kept = filter_to_sessions(bars)
+    print(f"  [filter_to_sessions] {label}: dropped {len(bars) - len(kept)} phantom bar(s)")
+    return kept
+
+
 def ema_per_session(close: np.ndarray, starts: np.ndarray, n: int) -> np.ndarray:
     """Standard EMA (alpha = 2/(n+1)), seeded on the simple mean of the first n
     bars, RESET at each session start. NaN before the seed."""
@@ -343,10 +354,11 @@ def main() -> None:
     ap.add_argument("--bars", type=Path, default=REPO / "data/DIA_3m.parquet")
     ap.add_argument("--htf", type=Path, default=REPO / "data/DIA_15m.parquet")
     ap.add_argument("--out", type=Path, required=True)
+    ap.add_argument("--filter-sessions", action="store_true", help="drop phantom bars stamped after a half-day's official 13:00 close (core.data.calendar.filter_to_sessions). Default OFF so the recorded result reproduces byte-for-byte; see experiments/data-audits/2026-08-30-phantom-half-day-bars/.")
     args = ap.parse_args()
 
-    m3 = pd.read_parquet(args.bars)
-    m15 = pd.read_parquet(args.htf)
+    m3 = _maybe_filter(pd.read_parquet(args.bars), args.filter_sessions, "3m")
+    m15 = _maybe_filter(pd.read_parquet(args.htf), args.filter_sessions, "15m")
     df, counts = simulate(m3, m15)
 
     def sha256(p: Path) -> str:
